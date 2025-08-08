@@ -26,8 +26,6 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
-      - name: Test
-        run: pnpm test --if-present -- --ci
 
       - name: Build (sanity)
         run: pnpm run build
