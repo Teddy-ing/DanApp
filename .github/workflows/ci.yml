@@ -11,24 +11,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Install pnpm first
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+          run_install: false
+
+      # Then set up Node and enable pnpm cache
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - uses: pnpm/action-setup@v4
-        with:
-          run_install: false  # uses package.json "packageManager" version if present
 
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
-      - name: Lint (optional)
-        run: pnpm --if-present lint
+      - name: Test
+        run: pnpm test --if-present -- --ci
 
-      - name: Test (optional)
-        run: pnpm --if-present test -- --ci
-
-      - name: Build (optional)
-        run: pnpm --if-present build
+      - name: Build (sanity)
+        run: pnpm run build
