@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { createRedisClient } from "../lib/redis";
+import { validateUsTickerFormat } from "../lib/ticker";
 
 // Types and schemas for Yahoo Finance via RapidAPI
 // We model three data domains needed by the app: daily candles, splits, dividends.
@@ -55,12 +56,13 @@ export async function fetchDailyCandles(
   range: "5y" | "max" | "1y" = "5y",
   auth: RapidApiAuth
 ): Promise<DailyCandle[]> {
+  const validSymbol = validateUsTickerFormat(symbol);
   const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol, interval: "1d", range });
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range });
 
   // Cache key per PRD: yf:{symbol}:prices:v1 (24h)
   const redis = createRedisClient();
-  const cacheKey = `yf:${symbol}:prices:v1`;
+  const cacheKey = `yf:${validSymbol}:prices:v1`;
   const cached = await redis.getJson<DailyCandle[]>(cacheKey);
   if (cached) return cached;
 
@@ -173,12 +175,13 @@ export async function fetchSplitsAndDividends(
   range: "5y" | "max" | "1y" = "max",
   auth: RapidApiAuth
 ): Promise<{ splits: SplitEvent[]; dividends: DividendEvent[] }> {
+  const validSymbol = validateUsTickerFormat(symbol);
   const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol, interval: "1d", range, events: "div,splits" });
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, events: "div,splits" });
 
   // Cache key per PRD: yf:{symbol}:divs:v1 (24h)
   const redis = createRedisClient();
-  const cacheKey = `yf:${symbol}:divs:v1`;
+  const cacheKey = `yf:${validSymbol}:divs:v1`;
   const cached = await redis.getJson<{ splits: SplitEvent[]; dividends: DividendEvent[] }>(cacheKey);
   if (cached) return cached;
 
@@ -270,11 +273,11 @@ async function fetchWithTimeout(url: string, timeoutMs: number, init?: RequestIn
 }
 
 export class ProviderError extends Error {
-  public readonly providerArea: "candles" | "events";
+  public readonly providerArea: "candles" | "events" | "symbol";
   public readonly status: number;
   public readonly bodySnippet: string | undefined;
 
-  constructor(area: "candles" | "events", status: number, message: string, bodySnippet?: string) {
+  constructor(area: "candles" | "events" | "symbol", status: number, message: string, bodySnippet?: string) {
     super(message);
     this.name = "ProviderError";
     this.providerArea = area;

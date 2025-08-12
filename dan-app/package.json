@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "cheerio": "^1.0.0",
     "@upstash/redis": "^1.35.3",
     "next": "15.4.6",
     "react": "19.1.0",
