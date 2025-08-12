@@ -285,7 +285,7 @@ function buildProviderError(area: "candles" | "events", status: number, body: st
   return new ProviderError(area, status, `Yahoo provider ${area} request failed (${status})`, snippet);
 }
 
-function buildParseError(area: "candles" | "events", zerr?: z.ZodError<any>): ProviderError {
+function buildParseError(area: "candles" | "events", zerr?: z.ZodError<unknown>): ProviderError {
   const detail = zerr ? zerr.errors.map((e: z.ZodIssue) => e.message).join(", ") : "Empty or malformed response";
   return new ProviderError(area, 502, `Yahoo provider ${area} parse error: ${detail}`);
 }
