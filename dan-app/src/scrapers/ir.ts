@@ -1,5 +1,6 @@
 import { load } from "cheerio";
 import { createRedisClient } from "../lib/redis";
+import { fetchWithTimeout } from "../lib/http";
 
 export type IrDividend = {
   dateIso: string; // YYYY-MM-DD, payment date if available
@@ -33,16 +34,13 @@ export async function scrapeIssuerDividends(
   if (cached) return cached;
 
   // politeness: 1 request/symbol per 7 days enforced by cache; we attempt at most one successful fetch
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000);
-
   let result: IrScrapeResult | null = null;
   try {
     for (const base of issuerBaseUrls) {
       for (const path of COMMON_IR_PATHS) {
         const url = new URL(path, base).toString();
         try {
-          const res = await fetch(url, { signal: controller.signal, cache: "no-store" });
+          const res = await fetchWithTimeout(url, { timeoutMs: 5000, cache: "no-store" });
           if (!res.ok) continue;
           const html = await res.text();
           const divs = parseDividendTable(html, url);
@@ -57,7 +55,7 @@ export async function scrapeIssuerDividends(
       if (result) break;
     }
   } finally {
-    clearTimeout(timeoutId);
+    // nothing
   }
 
   if (result) {

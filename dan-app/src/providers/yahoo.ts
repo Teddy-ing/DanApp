@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createRedisClient } from "../lib/redis";
 import { validateUsTickerFormat } from "../lib/ticker";
+import { fetchWithTimeout } from "../lib/http";
 
 // Types and schemas for Yahoo Finance via RapidAPI
 // We model three data domains needed by the app: daily candles, splits, dividends.
@@ -66,7 +67,8 @@ export async function fetchDailyCandles(
   const cached = await redis.getJson<DailyCandle[]>(cacheKey);
   if (cached) return cached;
 
-  const res = await fetchWithTimeout(`${url}?${params.toString()}`, 8000, {
+  const res = await fetchWithTimeout(`${url}?${params.toString()}`, {
+    timeoutMs: 8000,
     headers: {
       "x-rapidapi-key": auth.rapidApiKey,
       "x-rapidapi-host": "yh-finance.p.rapidapi.com",
@@ -185,7 +187,8 @@ export async function fetchSplitsAndDividends(
   const cached = await redis.getJson<{ splits: SplitEvent[]; dividends: DividendEvent[] }>(cacheKey);
   if (cached) return cached;
 
-  const res = await fetchWithTimeout(`${url}?${params.toString()}`, 8000, {
+  const res = await fetchWithTimeout(`${url}?${params.toString()}`, {
+    timeoutMs: 8000,
     headers: {
       "x-rapidapi-key": auth.rapidApiKey,
       "x-rapidapi-host": "yh-finance.p.rapidapi.com",
@@ -261,16 +264,7 @@ async function safeText(res: Response): Promise<string> {
   }
 }
 
-async function fetchWithTimeout(url: string, timeoutMs: number, init?: RequestInit): Promise<Response> {
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
-    return res;
-  } finally {
-    clearTimeout(id);
-  }
-}
+// using shared fetchWithTimeout from lib/http
 
 export class ProviderError extends Error {
   public readonly providerArea: "candles" | "events" | "symbol";
