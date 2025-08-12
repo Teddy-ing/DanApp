@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createRedisClient } from "../lib/redis";
 
 // Types and schemas for Yahoo Finance via RapidAPI
 // We model three data domains needed by the app: daily candles, splits, dividends.
@@ -57,7 +58,13 @@ export async function fetchDailyCandles(
   const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
   const params = new URLSearchParams({ symbol, interval: "1d", range });
 
-  const res = await fetch(`${url}?${params.toString()}`, {
+  // Cache key per PRD: yf:{symbol}:prices:v1 (24h)
+  const redis = createRedisClient();
+  const cacheKey = `yf:${symbol}:prices:v1`;
+  const cached = await redis.getJson<DailyCandle[]>(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetchWithTimeout(`${url}?${params.toString()}`, 8000, {
     headers: {
       "x-rapidapi-key": auth.rapidApiKey,
       "x-rapidapi-host": "yh-finance.p.rapidapi.com",
@@ -110,6 +117,8 @@ export async function fetchDailyCandles(
       adjClose: sanitizeNum(adjclose[i]),
     });
   }
+  // Store for 24 hours
+  await redis.setJson(cacheKey, candles, 60 * 60 * 24);
   return candles;
 }
 
@@ -121,22 +130,24 @@ const eventsResponseSchema = z.object({
         z.object({
           events: z
             .object({
-              splits: z.record(
-                z.object({
-                  date: z.number(),
-                  numerator: z.number().optional(),
-                  denominator: z.number().optional(),
-                  splitRatio: z.string().optional(),
-                })
-              )
+              splits: z
+                .record(
+                  z.object({
+                    date: z.number(),
+                    numerator: z.number().optional(),
+                    denominator: z.number().optional(),
+                    splitRatio: z.string().optional(),
+                  })
+                )
                 .optional()
                 .nullable(),
-              dividends: z.record(
-                z.object({
-                  date: z.number(),
-                  amount: z.number(),
-                })
-              )
+              dividends: z
+                .record(
+                  z.object({
+                    date: z.number(),
+                    amount: z.number(),
+                  })
+                )
                 .optional()
                 .nullable(),
             })
@@ -165,7 +176,13 @@ export async function fetchSplitsAndDividends(
   const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
   const params = new URLSearchParams({ symbol, interval: "1d", range, events: "div,splits" });
 
-  const res = await fetch(`${url}?${params.toString()}`, {
+  // Cache key per PRD: yf:{symbol}:divs:v1 (24h)
+  const redis = createRedisClient();
+  const cacheKey = `yf:${symbol}:divs:v1`;
+  const cached = await redis.getJson<{ splits: SplitEvent[]; dividends: DividendEvent[] }>(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetchWithTimeout(`${url}?${params.toString()}`, 8000, {
     headers: {
       "x-rapidapi-key": auth.rapidApiKey,
       "x-rapidapi-host": "yh-finance.p.rapidapi.com",
@@ -183,18 +200,21 @@ export async function fetchSplitsAndDividends(
     throw buildParseError("events", parsed.success ? undefined : parsed.error);
   }
 
-  const events = parsed.data.chart.result[0].events;
-  const splitsMap = events?.splits ?? {};
-  const dividendsMap = events?.dividends ?? {};
+  type SplitRecordEntry = { date: number; numerator?: number; denominator?: number; splitRatio?: string };
+  type DividendRecordEntry = { date: number; amount: number };
 
-  const splits: SplitEvent[] = Object.values(splitsMap).map((s) => {
+  const events = parsed.data.chart.result[0].events;
+  const splitsMap = (events?.splits ?? {}) as Record<string, SplitRecordEntry>;
+  const dividendsMap = (events?.dividends ?? {}) as Record<string, DividendRecordEntry>;
+
+  const splits: SplitEvent[] = Object.values(splitsMap).map((s: SplitRecordEntry) => {
     const ratio = s.splitRatio
       ? parseSplitRatio(s.splitRatio)
       : computeRatioFromNumeratorDenominator(s.numerator, s.denominator);
     return { dateUtcSeconds: s.date, ratio };
   });
 
-  const dividends: DividendEvent[] = Object.values(dividendsMap).map((d) => ({
+  const dividends: DividendEvent[] = Object.values(dividendsMap).map((d: DividendRecordEntry) => ({
     dateUtcSeconds: d.date,
     amount: d.amount,
   }));
@@ -203,7 +223,9 @@ export async function fetchSplitsAndDividends(
   splits.sort((a, b) => a.dateUtcSeconds - b.dateUtcSeconds);
   dividends.sort((a, b) => a.dateUtcSeconds - b.dateUtcSeconds);
 
-  return { splits, dividends };
+  const payload = { splits, dividends };
+  await redis.setJson(cacheKey, payload, 60 * 60 * 24);
+  return payload;
 }
 
 function parseSplitRatio(text?: string): number {
@@ -236,6 +258,17 @@ async function safeText(res: Response): Promise<string> {
   }
 }
 
+async function fetchWithTimeout(url: string, timeoutMs: number, init?: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    return res;
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 export class ProviderError extends Error {
   public readonly providerArea: "candles" | "events";
   public readonly status: number;
@@ -256,7 +289,7 @@ function buildProviderError(area: "candles" | "events", status: number, body: st
 }
 
 function buildParseError(area: "candles" | "events", zerr?: z.ZodError<any>): ProviderError {
-  const detail = zerr ? zerr.errors.map((e) => e.message).join(", ") : "Empty or malformed response";
+  const detail = zerr ? zerr.errors.map((e: z.ZodIssue) => e.message).join(", ") : "Empty or malformed response";
   return new ProviderError(area, 502, `Yahoo provider ${area} parse error: ${detail}`);
 }
 
