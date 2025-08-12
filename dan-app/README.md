@@ -20,6 +20,10 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Project notes
+
+- Providers: Added `src/providers/yahoo.ts` with Zod-validated fetchers for daily candles, splits, and dividends via RapidAPI Yahoo Finance. Expects a per-user `X-RapidAPI-Key` supplied at call sites (not stored in client).
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
