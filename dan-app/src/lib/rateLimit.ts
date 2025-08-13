@@ -22,7 +22,7 @@ export async function checkRateLimit(
 
   const count = await redis.zcard(key);
   if (typeof count === "number" && count >= limit) {
-    // Oldest timestamp to expire determines wait time
+    // Oldest timestamp to expire determines wait timea
     const oldestMembers = (await redis.zrange(key, 0, 0)) as string[];
     let oldestMs = nowMs;
     if (oldestMembers && oldestMembers.length > 0) {
