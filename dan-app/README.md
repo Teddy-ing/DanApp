@@ -27,6 +27,68 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - IR Fallback: `src/scrapers/ir.ts` scrapes common issuer IR dividend pages (5s timeout, 1 retry strategy implicit via multi-path attempts), cached 7 days under `ir:{symbol}:divs:v1`.
   - Validation: `src/lib/ticker.ts` validates US tickers (supports class suffix like `BRK-B`) and normalizes to uppercase.
 
+## API
+
+### GET `/api/prices`
+
+- Headers: `x-rapidapi-key: <YOUR_RAPIDAPI_KEY>`
+- Query: `symbols=AAPL,MSFT` (1–5 symbols), `range=5y|1y|max` (default `5y`)
+- Response:
+
+```json
+{
+  "items": [
+    {
+      "symbol": "AAPL",
+      "range": "5y",
+      "candles": [ { "dateUtcSeconds": 1704067200, "open": 100, "high": 101, "low": 99, "close": 100.5, "volume": 123, "adjClose": 100.5 } ],
+      "splits": [ { "dateUtcSeconds": 1598832000, "ratio": 4 } ]
+    }
+  ]
+}
+```
+
+Notes: Intended for orchestration/testing. Uses cached provider data when available.
+Rate limiting: All endpoints enforce 30 requests/minute per user (user derived from `x-user-id` or client IP). On exceed, respond `429` with `Retry-After` seconds.
+
+Errors: Endpoints return structured errors with codes and, in development, details. In production, messages are generic and internals are hidden.
+
+### GET `/api/dividends`
+
+- Headers: `x-rapidapi-key: <YOUR_RAPIDAPI_KEY>`
+- Query: `symbols=AAPL,MSFT` (1–5), optional `range=5y|1y|max` (default `5y`), optional per-symbol IR bases: `ir[AAPL]=https://investor.apple.com`
+- Behavior: Retrieves Yahoo dividends; if a gap > 180 days exists within the last 2 years and `ir[...]` is provided, merges issuer IR data to fill missing dates.
+- Response:
+
+```json
+{
+  "items": [
+    {
+      "symbol": "AAPL",
+      "range": "5y",
+      "dividends": [ { "dateIso": "2024-03-01", "amount": 0.24 } ]
+    }
+  ]
+}
+```
+
+### GET `/api/returns`
+
+- Headers: `x-rapidapi-key: <YOUR_RAPIDAPI_KEY>`
+- Query: `symbols=AAPL,MSFT` (1–5), optional `horizon=5y|max` (default `5y`), optional `base=number` (default `1000`)
+- Behavior: Orchestrates prices + dividends per symbol and runs DRIP total return. Response is gzipped.
+- Response:
+
+```json
+{
+  "meta": { "symbols": ["AAPL","MSFT"], "base": 1000, "horizon": "5y" },
+  "dates": ["2021-01-04", "2021-01-05"],
+  "series": [
+    { "symbol": "AAPL", "value": [1000, 1003.2], "pct": [0, 0.0032] }
+  ]
+}
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
