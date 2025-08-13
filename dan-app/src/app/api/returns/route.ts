@@ -3,8 +3,10 @@ import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
 import { validateUsTickerFormat } from "@/lib/ticker";
 import { computeDripSeries } from "@/lib/drip";
 import { gzipSync } from "zlib";
-import { checkRateLimit, extractUserId } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
+import { auth } from "@/auth";
+import { getDecryptedRapidApiKey } from "@/lib/userKey";
 
 type Horizon = "5y" | "max";
 
@@ -42,12 +44,13 @@ function jsonError(status: number, message: string, details?: unknown) {
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
-  const rapidApiKey = req.headers.get("x-rapidapi-key");
-  if (!rapidApiKey) {
-    return jsonError(400, "Missing required header: x-rapidapi-key");
-  }
+  // Require auth and inject stored RapidAPI key
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return jsonError(401, "Unauthorized");
+  const rapidApiKey = await getDecryptedRapidApiKey(userId);
+  if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
 
-  const userId = extractUserId(req.headers);
   const rl = await checkRateLimit("returns", userId, 30, 60);
   if (!rl.allowed) {
     return new NextResponse(JSON.stringify({ error: { message: "Rate limit exceeded", retryAfterSeconds: rl.retryAfterSeconds } }), {

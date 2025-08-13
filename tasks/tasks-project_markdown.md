@@ -2,9 +2,11 @@
 
 - `dan-app/src/lib/calendar.ts` — New helpers: `toNyDateString`, `nyTodayDateString`, `buildTradingCalendar` (union of trading days across symbols; NY timezone; end defaults to today)
 - `dan-app/src/lib/drip.ts` — New pure DRIP engine `computeDripSeries` producing aligned `dates`, per‑symbol `value[]` and `pct[]`; applies splits on date; reinvests dividends at next trading-day open; pads with nulls
-- `tasks/tasks-project_markdown.md` — Updated to mark task 2.1 complete and list relevant files
+- `dan-app/src/auth.ts` — NextAuth v5 config with Google provider; reads `AUTH_*` with fallback to `GOOGLE_CLIENT_*` and `NEXTAUTH_SECRET`; secure cookie options.
+- `dan-app/src/app/api/auth/[...nextauth]/route.ts` — Exposes NextAuth handlers (GET/POST).
+- `tasks/tasks-project_markdown.md` — Updated to mark task 4.1 complete and list relevant files
 ### Notes
-
+2 charts - the one showing the thing and another being normal
 
 
 ## Tasks
@@ -31,11 +33,11 @@
   - [x] 3.5 Standardize success payload to match PRD (`meta`, `dates`, `series`) and structured error responses; hide internals in prod while preserving developer stack traces in dev.
 
 - [ ] 4.0 Auth and user key management
-  - [ ] 4.1 Configure NextAuth Google provider; secure session cookie; set required env vars.
-  - [ ] 4.2 Implement `POST /api/user/key` to accept `{ rapidapiKey }`, encrypt with AES-GCM, and store at `user:{id}:rapidapiKey` in Redis.
-  - [ ] 4.3 Implement `GET /api/user/key` to return presence-only status (e.g., `{ hasKey: true }`) without revealing the key.
-  - [ ] 4.4 Inject the stored RapidAPI key into provider requests server-side; never send the key to the client.
-  - [ ] 4.5 Protect API routes requiring auth; add minimal UI state to handle unauthenticated access.
+  - [x] 4.1 Configure NextAuth Google provider; secure session cookie; set required env vars.
+  - [x] 4.2 Implement `POST /api/user/key` to accept `{ rapidapiKey }`, encrypt with AES-GCM, and store at `user:{id}:rapidapiKey` in Redis.
+  - [x] 4.3 Implement `GET /api/user/key` to return presence-only status (e.g., `{ hasKey: true }`) without revealing the key.
+  - [x] 4.4 Inject the stored RapidAPI key into provider requests server-side; never send the key to the client.
+  - [x] 4.5 Protect API routes requiring auth; add minimal UI state to handle unauthenticated access.
 
 - [ ] 5.0 UI and visualization
   - [ ] 5.1 Require Google sign-in; when not logged in, show Sign-In view.
