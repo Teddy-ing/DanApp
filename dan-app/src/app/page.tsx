@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { auth } from "@/auth";
 
 export default async function Home() {
@@ -15,9 +16,9 @@ export default async function Home() {
         </div>
         <div className="text-sm">
           {session?.user ? (
-            <a className="underline" href="/api/auth/signout">Sign out</a>
+            <Link className="underline" href="/api/auth/signout">Sign out</Link>
           ) : (
-            <a className="underline" href="/api/auth/signin">Sign in with Google</a>
+            <Link className="underline" href="/api/auth/signin">Sign in with Google</Link>
           )}
         </div>
       </header>

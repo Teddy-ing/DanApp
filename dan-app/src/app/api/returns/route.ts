@@ -3,7 +3,7 @@ import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
 import { validateUsTickerFormat } from "@/lib/ticker";
 import { computeDripSeries } from "@/lib/drip";
 import { gzipSync } from "zlib";
-import { checkRateLimit, extractUserId } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";

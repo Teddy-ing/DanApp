@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
 import { validateUsTickerFormat } from "@/lib/ticker";
-import { checkRateLimit, extractUserId } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
