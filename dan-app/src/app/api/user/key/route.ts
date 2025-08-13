@@ -14,7 +14,7 @@ function unauthorized() {
 	return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 }
 
-async function deriveAesGcmKey(secret: string, salt: Uint8Array): Promise<CryptoKey> {
+async function deriveAesGcmKey(secret: string, saltBytes: Uint8Array): Promise<CryptoKey> {
 	const enc = new TextEncoder();
 	const baseKey = await crypto.subtle.importKey(
 		"raw",
@@ -23,6 +23,7 @@ async function deriveAesGcmKey(secret: string, salt: Uint8Array): Promise<Crypto
 		false,
 		["deriveKey"]
 	);
+	const salt = new Uint8Array(saltBytes).buffer;
 	return crypto.subtle.deriveKey(
 		{ name: "HKDF", hash: "SHA-256", salt, info: enc.encode("rapidapiKey") },
 		baseKey,
