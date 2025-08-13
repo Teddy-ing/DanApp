@@ -1,5 +1,6 @@
 import type { DailyCandle, DividendEvent, SplitEvent } from "../providers/yahoo";
 import { buildTradingCalendar, nyTodayDateString, toNyDateString } from "./calendar";
+import { z } from "zod";
 
 export type DripInputSeries = {
   symbol: string;
@@ -85,6 +86,68 @@ function roundShares4(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
+// Runtime guards (lenient): coerce where possible, skip invalid
+const zCandle = z.object({
+  dateUtcSeconds: z.coerce.number().finite().positive(),
+  open: z.coerce.number().finite().optional().nullable(),
+  high: z.coerce.number().finite().optional().nullable(),
+  low: z.coerce.number().finite().optional().nullable(),
+  close: z.coerce.number().finite().optional().nullable(),
+  volume: z.coerce.number().finite().optional().nullable(),
+  adjClose: z.coerce.number().finite().optional().nullable(),
+});
+
+const zSplit = z.object({
+  dateUtcSeconds: z.coerce.number().finite().positive(),
+  ratio: z.coerce.number().finite().positive(),
+});
+
+const zDividend = z.object({
+  dateUtcSeconds: z.coerce.number().finite().positive(),
+  amount: z.coerce.number().finite(),
+});
+
+function sanitizeCandles(input: DailyCandle[] | undefined | null): DailyCandle[] {
+  const out: DailyCandle[] = [];
+  for (const c of input ?? []) {
+    const parsed = zCandle.safeParse(c as unknown);
+    if (!parsed.success) continue;
+    const v = parsed.data;
+    out.push({
+      dateUtcSeconds: v.dateUtcSeconds,
+      open: Number.isFinite(v.open as number) ? (v.open as number) : null,
+      high: Number.isFinite(v.high as number) ? (v.high as number) : null,
+      low: Number.isFinite(v.low as number) ? (v.low as number) : null,
+      close: Number.isFinite(v.close as number) ? (v.close as number) : null,
+      volume: Number.isFinite(v.volume as number) ? (v.volume as number) : null,
+      adjClose: Number.isFinite(v.adjClose as number) ? (v.adjClose as number) : null,
+    });
+  }
+  return out;
+}
+
+function sanitizeSplits(input: SplitEvent[] | undefined | null): SplitEvent[] {
+  const out: SplitEvent[] = [];
+  for (const s of input ?? []) {
+    const parsed = zSplit.safeParse(s as unknown);
+    if (!parsed.success) continue;
+    out.push({ dateUtcSeconds: parsed.data.dateUtcSeconds, ratio: parsed.data.ratio });
+  }
+  return out;
+}
+
+function sanitizeDividends(input: DividendEvent[] | undefined | null): DividendEvent[] {
+  const out: DividendEvent[] = [];
+  for (const d of input ?? []) {
+    const parsed = zDividend.safeParse(d as unknown);
+    if (!parsed.success) continue;
+    // Silently ignore non-positive amounts
+    if (!(parsed.data.amount > 0)) continue;
+    out.push({ dateUtcSeconds: parsed.data.dateUtcSeconds, amount: parsed.data.amount });
+  }
+  return out;
+}
+
 export function computeDripSeries(inputs: DripInputSeries[], options: DripOptions): DripOutput {
   const baseInvestment = options.base;
   if (!(baseInvestment > 0)) {
@@ -94,25 +157,42 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
   const nyToday = nyTodayDateString();
   const startBoundaryIso = options.horizon === "5y" ? nyFiveYearsAgoBoundaryIso(nyToday) : undefined;
 
+  // Sanitize inputs per symbol (lenient)
+  const sanitized = inputs.map((s) => ({
+    symbol: s.symbol,
+    candles: sanitizeCandles(s.candles),
+    splits: sanitizeSplits(s.splits),
+    dividends: sanitizeDividends(s.dividends),
+  }));
+
   // Build union trading calendar across symbols based on provider data
   const calendar = buildTradingCalendar(
-    inputs.map((s) => s.candles),
+    sanitized.map((s) => s.candles),
     { startDate: startBoundaryIso, endDate: nyToday }
   );
+
+  if (calendar.length === 0) {
+    return {
+      dates: [],
+      series: sanitized.map((s) => ({ symbol: s.symbol, value: [], pct: [] })),
+    };
+  }
 
   // Precompute lookups per symbol
   type Prepared = {
     symbol: string;
     byDate: Map<string, DailyCandle>;
     splitsByDate: Map<string, SplitEvent[]>;
-    dividendsByDate: Map<string, DividendEvent[]>;
+    sortedDividends: Array<{ dateIso: string; amount: number }>;
   };
 
-  const prepared: Prepared[] = inputs.map((s) => ({
+  const prepared: Prepared[] = sanitized.map((s) => ({
     symbol: s.symbol,
     byDate: toCandleByNyDate(s.candles),
     splitsByDate: toMapByNyDate(s.splits ?? []),
-    dividendsByDate: toMapByNyDate(s.dividends ?? []),
+    sortedDividends: (s.dividends ?? [])
+      .map((d) => ({ dateIso: toNyDateString(d.dateUtcSeconds), amount: d.amount }))
+      .sort((a, b) => (a.dateIso < b.dateIso ? -1 : a.dateIso > b.dateIso ? 1 : 0)),
   }));
 
   const seriesOutputs: DripOutput["series"] = [];
@@ -123,7 +203,9 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
 
     let started = false;
     let shares = 0;
+    let sharesAtPriorClose = 0; // shares at the end of the previous trading day
     let pendingCash = 0; // dividend cash waiting for next available open
+    let divIdx = 0;
 
     for (const d of calendar) {
       const candle = p.byDate.get(d);
@@ -134,6 +216,19 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
         // Initialize on the first available close on/after the boundary
         shares = roundShares4(baseInvestment / closePrice);
         started = true;
+      }
+
+      // Process dividends with pay date <= current trading date.
+      while (divIdx < p.sortedDividends.length && p.sortedDividends[divIdx].dateIso <= d) {
+        const dv = p.sortedDividends[divIdx];
+        divIdx += 1;
+        if (started) {
+          const amt = dv.amount;
+          if (typeof amt === "number" && isFinite(amt) && amt > 0) {
+            // Cash computed using shares at the previous trading day's close
+            pendingCash += sharesAtPriorClose * amt;
+          }
+        }
       }
 
       if (started) {
@@ -155,17 +250,6 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
           }
           pendingCash = 0;
         }
-
-        // 3) If dividend payment occurs on d, accrue cash to reinvest on the next trading day
-        const divsToday = p.dividendsByDate.get(d);
-        if (divsToday && divsToday.length > 0) {
-          for (const dv of divsToday) {
-            const amt = dv.amount;
-            if (typeof amt === "number" && isFinite(amt) && amt > 0) {
-              pendingCash += shares * amt;
-            }
-          }
-        }
       }
 
       // 4) Valuation at close
@@ -177,6 +261,9 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
         values.push(null);
         pcts.push(null);
       }
+
+      // Update prior-close shares snapshot for the next iteration
+      sharesAtPriorClose = started ? shares : 0;
     }
 
     seriesOutputs.push({ symbol: p.symbol, value: values, pct: pcts });
