@@ -1,9 +1,32 @@
 import Image from "next/image";
+import { auth } from "@/auth";
 
-export default function Home() {
+export default async function Home() {
+  const session = await auth();
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
+    <div className="font-sans grid grid-rows-[auto_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-6 sm:p-20">
+      <header className="row-start-1 w-full flex items-center justify-between">
+        <div className="text-sm text-gray-600 dark:text-gray-300">
+          {session?.user ? (
+            <span>Signed in as {session.user.email || session.user.name}</span>
+          ) : (
+            <span>Not signed in</span>
+          )}
+        </div>
+        <div className="text-sm">
+          {session?.user ? (
+            <a className="underline" href="/api/auth/signout">Sign out</a>
+          ) : (
+            <a className="underline" href="/api/auth/signin">Sign in with Google</a>
+          )}
+        </div>
+      </header>
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
+        {!session?.user && (
+          <div className="text-sm text-red-600 dark:text-red-400">
+            Sign in to use the API endpoints and save your RapidAPI key.
+          </div>
+        )}
         <Image
           className="dark:invert"
           src="/next.svg"

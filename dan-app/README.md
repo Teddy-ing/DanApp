@@ -23,15 +23,27 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ## Project notes
 
 - Providers: Added `src/providers/yahoo.ts` with Zod-validated fetchers for daily candles, splits, and dividends via RapidAPI Yahoo Finance. Expects a per-user `X-RapidAPI-Key` supplied at call sites (not stored in client).
+  - Auth integration: API routes now inject the authenticated user’s RapidAPI key server-side; the client should not send `x-rapidapi-key`.
   - Caching: Uses Upstash Redis via `src/lib/redis.ts` with TTLs per PRD (`yf:{symbol}:prices:v1`, `yf:{symbol}:divs:v1`, 24h).
   - IR Fallback: `src/scrapers/ir.ts` scrapes common issuer IR dividend pages (5s timeout, 1 retry strategy implicit via multi-path attempts), cached 7 days under `ir:{symbol}:divs:v1`.
   - Validation: `src/lib/ticker.ts` validates US tickers (supports class suffix like `BRK-B`) and normalizes to uppercase.
 
+## Auth
+
+- NextAuth v5 with Google provider is configured in `src/auth.ts` and exposed at `app/api/auth/[...nextauth]/route.ts`.
+- Required env vars (either naming scheme works):
+  - `AUTH_GOOGLE_ID` or `GOOGLE_CLIENT_ID`
+  - `AUTH_GOOGLE_SECRET` or `GOOGLE_CLIENT_SECRET`
+  - `AUTH_SECRET` or `NEXTAUTH_SECRET`
+  - `NEXTAUTH_URL`/`AUTH_URL` (Vercel often auto-sets)
+- Google OAuth redirect URI: `<your-domain>/api/auth/callback/google`
+- Session cookie is httpOnly, sameSite=lax, and secure in production.
+
 ## API
 
-### GET `/api/prices`
+### GET `/api/prices` (auth required)
 
-- Headers: `x-rapidapi-key: <YOUR_RAPIDAPI_KEY>`
+- No headers required; the server uses the stored key for the logged-in user.
 - Query: `symbols=AAPL,MSFT` (1–5 symbols), `range=5y|1y|max` (default `5y`)
 - Response:
 
@@ -51,11 +63,22 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 Notes: Intended for orchestration/testing. Uses cached provider data when available.
 Rate limiting: All endpoints enforce 30 requests/minute per user (user derived from `x-user-id` or client IP). On exceed, respond `429` with `Retry-After` seconds.
 
+### POST `/api/user/key` (auth required)
+
+- Body: `{ "rapidapiKey": "..." }`
+- Behavior: Encrypts the key with AES-GCM (HKDF-derived key from `AUTH_SECRET`, salt=user id) and stores it in Redis under `user:{id}:rapidapiKey`.
+- Response: `{ "ok": true }` on success.
+- Never returns the key.
+
+### GET `/api/user/key` (auth required)
+
+- Response: `{ "hasKey": true | false }` indicating only whether a RapidAPI key is stored for the user. Does not reveal or decrypt the key.
+
 Errors: Endpoints return structured errors with codes and, in development, details. In production, messages are generic and internals are hidden.
 
-### GET `/api/dividends`
+### GET `/api/dividends` (auth required)
 
-- Headers: `x-rapidapi-key: <YOUR_RAPIDAPI_KEY>`
+- No headers required; the server uses the stored key for the logged-in user.
 - Query: `symbols=AAPL,MSFT` (1–5), optional `range=5y|1y|max` (default `5y`), optional per-symbol IR bases: `ir[AAPL]=https://investor.apple.com`
 - Behavior: Retrieves Yahoo dividends; if a gap > 180 days exists within the last 2 years and `ir[...]` is provided, merges issuer IR data to fill missing dates.
 - Response:
@@ -72,9 +95,9 @@ Errors: Endpoints return structured errors with codes and, in development, detai
 }
 ```
 
-### GET `/api/returns`
+### GET `/api/returns` (auth required)
 
-- Headers: `x-rapidapi-key: <YOUR_RAPIDAPI_KEY>`
+- No headers required; the server uses the stored key for the logged-in user.
 - Query: `symbols=AAPL,MSFT` (1–5), optional `horizon=5y|max` (default `5y`), optional `base=number` (default `1000`)
 - Behavior: Orchestrates prices + dividends per symbol and runs DRIP total return. Response is gzipped.
 - Response:
