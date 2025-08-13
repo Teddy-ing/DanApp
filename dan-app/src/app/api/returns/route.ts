@@ -92,7 +92,8 @@ export async function GET(req: NextRequest) {
     };
 
     const gz = gzipSync(Buffer.from(JSON.stringify(payload)));
-    return new NextResponse(gz, {
+    const body = new Uint8Array(gz);
+    return new NextResponse(body, {
       status: 200,
       headers: {
         "content-type": "application/json; charset=utf-8",
