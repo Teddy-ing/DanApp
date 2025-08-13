@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
     );
 
     return NextResponse.json({ items: results });
-  } catch (err: any) {
+  } catch (err: unknown) {
     const { status, payload } = toApiError(err);
     return new NextResponse(JSON.stringify(payload), {
       status,

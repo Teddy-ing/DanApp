@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
         const { dividends } = await fetchSplitsAndDividends(symbol, range, { rapidApiKey });
         const yahooDivs = dividends.map((d) => ({ dateIso: toNyDateString(d.dateUtcSeconds), amount: d.amount }));
         const yahooDates = yahooDivs.map((d) => d.dateIso);
-        let merged = [...yahooDivs];
+        const merged = [...yahooDivs];
 
         const needGapFill = computeGapNeeded(yahooDates);
         const bases = irBases[symbol] || [];
@@ -129,7 +129,7 @@ export async function GET(req: NextRequest) {
     );
 
     return NextResponse.json({ items });
-  } catch (err: any) {
+  } catch (err: unknown) {
     const { status, payload } = toApiError(err);
     return new NextResponse(JSON.stringify(payload), {
       status,

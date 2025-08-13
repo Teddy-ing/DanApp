@@ -51,7 +51,7 @@ export function toApiError(err: unknown): ToApiError {
   }
 
   // Unknown/internal
-  const anyErr = err as any;
+  const anyErr = err as { message?: unknown; stack?: unknown };
   const message = typeof anyErr?.message === "string" ? anyErr.message : "Internal server error";
   const stack = typeof anyErr?.stack === "string" ? anyErr.stack : undefined;
   return {
