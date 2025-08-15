@@ -9,12 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "cheerio": "^1.0.0",
+    "@tanstack/react-query": "^5.85.3",
+    "@tanstack/react-query-devtools": "^5.85.3",
     "@upstash/redis": "^1.35.3",
-    "next-auth": "5.0.0-beta.29",
+    "cheerio": "^1.0.0",
     "next": "15.4.6",
+    "next-auth": "5.0.0-beta.29",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "recharts": "^3.1.2",
     "zod": "^3.25.76"
   },
   "devDependencies": {
