@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
 import KeyModal from "@/app/components/KeyModal";
+import InputsPanel from "@/app/components/InputsPanel";
 
 export default async function Home() {
   const session = await auth();
@@ -32,7 +33,7 @@ export default async function Home() {
         </div>
       </header>
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        
+        <InputsPanel />
         <Image
           className="dark:invert"
           src="/next.svg"
