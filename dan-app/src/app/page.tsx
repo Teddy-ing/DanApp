@@ -4,30 +4,33 @@ import { auth } from "@/auth";
 
 export default async function Home() {
   const session = await auth();
+  if (!session?.user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm rounded-xl border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 shadow-sm p-6">
+          <div className="text-center mb-4">
+            <h1 className="text-lg font-semibold">Sign in to continue</h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Use your Google account to access the app.</p>
+          </div>
+          <a href="/api/auth/signin" className="w-full inline-flex items-center justify-center rounded-md bg-black text-white dark:bg-white dark:text-black px-4 py-2.5 text-sm font-medium hover:opacity-90 transition">
+            Sign in with Google
+          </a>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="font-sans grid grid-rows-[auto_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-6 sm:p-20">
       <header className="row-start-1 w-full flex items-center justify-between">
         <div className="text-sm text-gray-600 dark:text-gray-300">
-          {session?.user ? (
-            <span>Signed in as {session.user.email || session.user.name}</span>
-          ) : (
-            <span>Not signed in</span>
-          )}
+          <span>Signed in as {session.user.email || session.user.name}</span>
         </div>
         <div className="text-sm">
-          {session?.user ? (
-            <Link className="underline" href="/api/auth/signout">Sign out</Link>
-          ) : (
-            <Link className="underline" href="/api/auth/signin">Sign in with Google</Link>
-          )}
+          <Link className="underline" href="/api/auth/signout">Sign out</Link>
         </div>
       </header>
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        {!session?.user && (
-          <div className="text-sm text-red-600 dark:text-red-400">
-            Sign in to use the API endpoints and save your RapidAPI key.
-          </div>
-        )}
+        
         <Image
           className="dark:invert"
           src="/next.svg"
