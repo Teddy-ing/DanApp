@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
+import KeyModal from "@/app/components/KeyModal";
 
 export default async function Home() {
   const session = await auth();
@@ -25,7 +26,8 @@ export default async function Home() {
         <div className="text-sm text-gray-600 dark:text-gray-300">
           <span>Signed in as {session.user.email || session.user.name}</span>
         </div>
-        <div className="text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          <KeyModal />
           <Link className="underline" href="/api/auth/signout">Sign out</Link>
         </div>
       </header>
