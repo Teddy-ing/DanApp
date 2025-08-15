@@ -2,6 +2,9 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { validateUsTickerFormat } from '@/lib/ticker';
+import { useQuery } from '@tanstack/react-query';
+import ReturnsChart from '@/app/components/ReturnsChart';
+import PriceChart from '@/app/components/PriceChart';
 
 type Horizon = '5y' | 'max';
 
@@ -11,6 +14,7 @@ export default function InputsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [base, setBase] = useState<number>(1000);
   const [horizon, setHorizon] = useState<Horizon>('5y');
+  const [requested, setRequested] = useState(false);
 
   const canAddMore = symbols.length < 5;
 
@@ -150,8 +154,96 @@ export default function InputsPanel() {
             </div>
           </div>
         </div>
+
+        <FetchReturns
+          symbols={symbols}
+          base={base}
+          horizon={horizon}
+          requested={requested}
+          onRequest={() => setRequested(true)}
+        />
       </div>
     </section>
+  );
+}
+
+function FetchReturns(props: {
+  symbols: string[];
+  base: number;
+  horizon: Horizon;
+  requested: boolean;
+  onRequest: () => void;
+}) {
+  const { symbols, base, horizon, requested, onRequest } = props;
+  const queryKey = useMemo(() => ['returns', { symbols, base, horizon }], [symbols, base, horizon]);
+  const queryEnabled = requested && symbols.length > 0;
+
+  const query = useQuery({
+    queryKey,
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('symbols', symbols.join(','));
+      params.set('horizon', horizon);
+      params.set('base', String(base));
+      const res = await fetch(`/api/returns?${params.toString()}`, { headers: { 'accept-encoding': 'gzip' }, cache: 'no-store' });
+      const text = await res.text();
+      const data = JSON.parse(text);
+      if (!res.ok) {
+        throw new Error(data?.error?.message || 'Request failed');
+      }
+      return data as { meta: unknown; dates: string[]; series: Array<{ symbol: string; value: (number|null)[]; pct: (number|null)[] }>; };
+    },
+  });
+
+  const priceQuery = useQuery({
+    queryKey: ['prices', { symbols, range: horizon }],
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set('symbols', symbols.join(','));
+      // Map horizon to a sensible range for price chart
+      params.set('range', horizon);
+      const res = await fetch(`/api/prices?${params.toString()}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || 'Prices request failed');
+      return data as { items: Array<{ symbol: string; range: string; candles: Array<{ date: string; open: number; high: number; low: number; close: number; volume: number }> }> };
+    },
+  });
+
+  const hasParams = symbols.length > 0;
+
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => onRequest()}
+        disabled={!hasParams || query.isFetching}
+        className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
+      >
+        {query.isFetching ? 'Fetching…' : 'Fetch returns'}
+      </button>
+      <div className="mt-2 text-sm">
+        {!hasParams && <p className="text-gray-600 dark:text-gray-400">Add at least one symbol to enable fetch.</p>}
+        {query.error && <p className="text-red-600 dark:text-red-400">{(query.error as Error).message}</p>}
+        {query.isSuccess && (
+          <p className="text-gray-700 dark:text-gray-300">Loaded {query.data.dates.length} dates for {query.data.series.length} symbols.</p>
+        )}
+      </div>
+
+      {query.isSuccess && (
+        <div className="mt-4">
+          <ReturnsChart dates={query.data.dates} series={query.data.series} />
+        </div>
+      )}
+
+      {priceQuery.error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{(priceQuery.error as Error).message}</p>}
+      {priceQuery.isSuccess && (
+        <div className="mt-4">
+          <PriceChart items={priceQuery.data.items.map((i) => ({ symbol: i.symbol, candles: i.candles }))} />
+        </div>
+      )}
+    </div>
   );
 }
 
