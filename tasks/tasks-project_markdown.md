@@ -5,6 +5,15 @@
 - `dan-app/src/auth.ts` — NextAuth v5 config with Google provider; reads `AUTH_*` with fallback to `GOOGLE_CLIENT_*` and `NEXTAUTH_SECRET`; secure cookie options.
 - `dan-app/src/app/api/auth/[...nextauth]/route.ts` — Exposes NextAuth handlers (GET/POST).
 - `dan-app/src/app/page.tsx` — Gated home route: shows full-page sign-in card when unauthenticated; normal content when signed in.
+- `dan-app/src/app/components/KeyModal.tsx` — Client modal to connect RapidAPI key; POST to `/api/user/key`; shows current key status.
+- `dan-app/src/app/components/InputsPanel.tsx` — Client inputs: multi-symbol chip input (deduped, max 5), base amount (default 1000), horizon toggle (5y/max).
+- `dan-app/src/app/components/ReturnsChart.tsx` — Recharts multi-line chart with $/% toggle and custom tooltip.
+- `dan-app/src/app/components/PriceChart.tsx` — Recharts price chart showing close prices under returns chart.
+- `dan-app/src/app/page.tsx` — Footer with attribution/disclaimer; main content anchor for skip link.
+- `dan-app/src/app/layout.tsx` — Adds skip link for a11y and wraps with QueryProvider.
+- `dan-app/src/app/globals.css` — Focus-visible, skip-link, and high-contrast tweaks.
+- `dan-app/src/app/QueryProvider.tsx` — React Query provider with Devtools; disables auto-refetch.
+- `dan-app/src/app/layout.tsx` — Wrap app with `QueryProvider`.
 - `tasks/tasks-project_markdown.md` — Updated to mark task 4.1 complete and list relevant files
 ### Notes
 2 charts - the one showing the thing and another being normal
@@ -42,11 +51,11 @@
 
 - [ ] 5.0 UI and visualization
   - [x] 5.1 Require Google sign-in; when not logged in, show Sign-In view.
-  - [ ] 5.2 Add guided modal to paste and save the RapidAPI key; call `/api/user/key`; show success/error toasts.
-  - [ ] 5.3 Build inputs: multi-symbol chip input (1–5), base amount numeric input (default 1000), and horizon toggle (`5y`/`max`).
-  - [ ] 5.4 Integrate React Query to call `/api/returns`; handle loading, errors, and refetch; user-triggered refresh only.
-  - [ ] 5.5 Render Recharts multi-line chart with $/% toggle; tooltip includes date and per-symbol $/% values; align datasets.
-  - [ ] 5.6 Footer with attribution/disclaimer; a11y: keyboard navigation, high-contrast palette, dark mode.
+  - [x] 5.2 Add guided modal to paste and save the RapidAPI key; call `/api/user/key`; show success/error toasts.
+  - [x] 5.3 Build inputs: multi-symbol chip input (1–5), base amount numeric input (default 1000), and horizon toggle (`5y`/`max`).
+  - [x] 5.4 Integrate React Query to call `/api/returns`; handle loading, errors, and refetch; user-triggered refresh only.
+  - [x] 5.5 Render Recharts multi-line chart with $/% toggle; tooltip includes date and per-symbol $/% values; align datasets.
+  - [x] 5.6 Footer with attribution/disclaimer; a11y: keyboard navigation, high-contrast palette, dark mode.
 
 - [ ] 6.0 Testing and developer experience
   - [ ] 6.1 Set up Vitest for unit and integration tests; ensure TS support; add `pnpm` scripts.
