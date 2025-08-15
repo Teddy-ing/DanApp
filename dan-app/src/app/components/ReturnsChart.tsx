@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
@@ -30,7 +31,9 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
     for (let i = 0; i < props.dates.length; i += 1) {
       const row: Record<string, number | string | null> = { date: props.dates[i] };
       for (const s of props.series) {
-        row[s.symbol] = mode === '$' ? s.value[i] : (s.pct[i] == null ? null : s.pct[i] * 100);
+        const val = s.value[i] ?? null;
+        const pct = s.pct[i] ?? null;
+        row[s.symbol] = mode === '$' ? val : (pct == null ? null : pct * 100);
       }
       rows.push(row);
     }
@@ -68,9 +71,10 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
             <Tooltip
-              formatter={(value: any, name: any) => {
-                const v = typeof value === 'number' ? value : null;
-                return mode === '$' ? [`$${v?.toFixed(2)}`, name] : [`${v?.toFixed(2)}%`, name];
+              formatter={(value: ValueType, name: NameType) => {
+                const num = typeof value === 'number' ? value : null;
+                const display = num == null ? '' : num.toFixed(2);
+                return mode === '$' ? [`$${display}`, String(name)] : [`${display}%`, String(name)];
               }}
               labelFormatter={(label) => `${label}`}
             />
