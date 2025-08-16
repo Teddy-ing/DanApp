@@ -83,7 +83,15 @@ export async function POST(req: NextRequest) {
 				});
 				if (getRes.ok) {
 					const txt = await getRes.text();
-					persisted = txt.includes("ciphertext");
+					try {
+						const outer = JSON.parse(txt);
+						if (outer && typeof outer.result === "string") {
+							const inner = JSON.parse(outer.result);
+							persisted = Boolean(inner && typeof inner.ciphertext === "string" && inner.ciphertext.length > 0);
+						}
+					} catch {
+						persisted = false;
+					}
 				}
 			}
 		} catch {
@@ -120,7 +128,16 @@ export async function GET() {
 			});
 			if (!res.ok) return NextResponse.json({ hasKey: false });
 			const txt = await res.text();
-			const hasKey = txt.includes("ciphertext");
+			let hasKey = false;
+			try {
+				const outer = JSON.parse(txt);
+				if (outer && typeof outer.result === "string") {
+					const inner = JSON.parse(outer.result);
+					hasKey = Boolean(inner && typeof inner.ciphertext === "string" && inner.ciphertext.length > 0);
+				}
+			} catch {
+				hasKey = false;
+			}
 			return NextResponse.json({ hasKey });
 		} catch {
 			return NextResponse.json({ hasKey: false });

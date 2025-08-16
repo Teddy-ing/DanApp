@@ -20,6 +20,35 @@ export async function GET() {
   let ctLen: number | null = null;
 
   if (hasRedisUrl && hasRedisToken) {
+    // Prefer REST so we see the exact data layer
+    try {
+      const keyName = `user:${userId}:rapidapiKey`;
+      const res = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/get/${encodeURIComponent(keyName)}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}` },
+      });
+      reachable = true;
+      if (res.ok) {
+        const text = await res.text();
+        const outer = JSON.parse(text);
+        if (outer && typeof outer.result === "string") {
+          try {
+            const inner = JSON.parse(outer.result) as { iv?: string; ciphertext?: string };
+            if (inner && typeof inner.iv === "string" && typeof inner.ciphertext === "string") {
+              exists = true;
+              ivLen = inner.iv.length;
+              ctLen = inner.ciphertext.length;
+            }
+          } catch {
+            // not JSON → treat as absent
+          }
+        }
+      }
+    } catch {
+      // ignore; leave defaults
+    }
+  } else {
+    // Fallback via SDK
     try {
       const redis = createRedisClient();
       const rec = await redis.getJson<{ iv: string; ciphertext: string }>(`user:${userId}:rapidapiKey`);
@@ -29,9 +58,7 @@ export async function GET() {
         ivLen = typeof rec.iv === "string" ? rec.iv.length : null;
         ctLen = typeof rec.ciphertext === "string" ? rec.ciphertext.length : null;
       }
-    } catch {
-      // ignore; leave defaults
-    }
+    } catch {}
   }
 
   let decryptOk = false;
