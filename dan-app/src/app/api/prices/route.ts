@@ -66,19 +66,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const results = await Promise.all(
-      symbols.map(async (symbol) => {
-        const candles = await fetchDailyCandles(symbol, range, { rapidApiKey });
-        await new Promise((r) => setTimeout(r, 300));
-        const events = await fetchSplitsAndDividends(symbol, range, { rapidApiKey });
-        return {
-          symbol,
-          range,
-          candles,
-          splits: events.splits,
-        };
-      })
-    );
+    const results = [] as Array<{ symbol: string; range: typeof range; candles: Awaited<ReturnType<typeof fetchDailyCandles>>; splits: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["splits"] }>;
+    for (let idx = 0; idx < symbols.length; idx += 1) {
+      const symbol = symbols[idx]!;
+      const candles = await fetchDailyCandles(symbol, range, { rapidApiKey });
+      await new Promise((r) => setTimeout(r, 500));
+      const events = await fetchSplitsAndDividends(symbol, range, { rapidApiKey });
+      results.push({ symbol, range, candles, splits: events.splits });
+      if (idx < symbols.length - 1) await new Promise((r) => setTimeout(r, 800));
+    }
 
     return NextResponse.json({ items: results });
   } catch (err: unknown) {

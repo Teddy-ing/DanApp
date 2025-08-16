@@ -196,10 +196,13 @@ function FetchReturns(props: {
     },
   });
 
+  // Trigger prices only after returns succeeds to avoid upstream 429 due to concurrent calls
   const priceQuery = useQuery({
     queryKey: ['prices', { symbols, range: horizon }],
-    enabled: queryEnabled,
+    enabled: query.isSuccess,
     queryFn: async () => {
+      // Small delay to space upstream requests after returns
+      await new Promise((r) => setTimeout(r, 1200));
       const params = new URLSearchParams();
       params.set('symbols', symbols.join(','));
       // Map horizon to a sensible range for price chart

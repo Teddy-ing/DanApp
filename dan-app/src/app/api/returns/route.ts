@@ -74,21 +74,22 @@ export async function GET(req: NextRequest) {
   const base = parseBase(url.searchParams.get("base"));
 
   try {
-    const seriesInputs = await Promise.all(
-      symbols.map(async (symbol) => {
-        // Sequentialize provider calls per symbol to avoid upstream 429s
-        const candles = await fetchDailyCandles(symbol, horizon, { rapidApiKey });
-        // Small delay to respect upstream per-second limits
-        await new Promise((r) => setTimeout(r, 300));
-        const events = await fetchSplitsAndDividends(symbol, horizon, { rapidApiKey });
-        return {
-          symbol,
-          candles,
-          splits: events.splits,
-          dividends: events.dividends,
-        };
-      })
-    );
+    // Process symbols sequentially with staggering to reduce upstream 429s
+    const seriesInputs = [] as Array<{
+      symbol: string;
+      candles: Awaited<ReturnType<typeof fetchDailyCandles>>;
+      splits: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["splits"];
+      dividends: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["dividends"];
+    }>;
+    for (let idx = 0; idx < symbols.length; idx += 1) {
+      const symbol = symbols[idx]!;
+      const candles = await fetchDailyCandles(symbol, horizon, { rapidApiKey });
+      await new Promise((r) => setTimeout(r, 500));
+      const events = await fetchSplitsAndDividends(symbol, horizon, { rapidApiKey });
+      seriesInputs.push({ symbol, candles, splits: events.splits, dividends: events.dividends });
+      // Stagger next symbol
+      if (idx < symbols.length - 1) await new Promise((r) => setTimeout(r, 800));
+    }
 
     const drip = computeDripSeries(seriesInputs, { base, horizon });
 
