@@ -3,7 +3,6 @@ import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
 import { validateUsTickerFormat } from "@/lib/ticker";
 import { computeDripSeries } from "@/lib/drip";
 import { gzipSync } from "zlib";
-import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
@@ -48,16 +47,20 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) return jsonError(401, "Unauthorized");
-  const rapidApiKey = await getDecryptedRapidApiKey(userId);
-  if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
-
-  const rl = await checkRateLimit("returns", userId, 30, 60);
-  if (!rl.allowed) {
-    return new NextResponse(JSON.stringify({ error: { message: "Rate limit exceeded", retryAfterSeconds: rl.retryAfterSeconds } }), {
-      status: 429,
-      headers: { "content-type": "application/json; charset=utf-8", "retry-after": String(rl.retryAfterSeconds ?? 60) },
-    });
+  let rapidApiKey: string;
+  try {
+    const key = await getDecryptedRapidApiKey(userId);
+    if (!key) return jsonError(400, "RapidAPI key not set. Save your key first.");
+    rapidApiKey = key;
+  } catch (e) {
+    const code = (e as Error)?.message || '';
+    if (code === 'MISCONFIG_SECRET') {
+      return jsonError(500, 'Server misconfiguration: missing AUTH_SECRET/NEXTAUTH_SECRET');
+    }
+    return jsonError(400, 'RapidAPI key not set. Save your key first.');
   }
+
+  // Rate limiting disabled per product decision: requests bill against the user's RapidAPI key
 
   const symbols = parseSymbols(url.searchParams.get("symbols"));
   if (symbols.length === 0) {
@@ -73,10 +76,11 @@ export async function GET(req: NextRequest) {
   try {
     const seriesInputs = await Promise.all(
       symbols.map(async (symbol) => {
-        const [candles, events] = await Promise.all([
-          fetchDailyCandles(symbol, horizon, { rapidApiKey }),
-          fetchSplitsAndDividends(symbol, horizon, { rapidApiKey }),
-        ]);
+        // Sequentialize provider calls per symbol to avoid upstream 429s
+        const candles = await fetchDailyCandles(symbol, horizon, { rapidApiKey });
+        // Small delay to respect upstream per-second limits
+        await new Promise((r) => setTimeout(r, 300));
+        const events = await fetchSplitsAndDividends(symbol, horizon, { rapidApiKey });
         return {
           symbol,
           candles,
