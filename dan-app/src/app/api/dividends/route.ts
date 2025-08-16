@@ -86,13 +86,7 @@ export async function GET(req: NextRequest) {
   const rapidApiKey = await getDecryptedRapidApiKey(userId);
   if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
 
-  const rl = await checkRateLimit("dividends", userId, 30, 60);
-  if (!rl.allowed) {
-    return new NextResponse(JSON.stringify({ error: { message: "Rate limit exceeded", retryAfterSeconds: rl.retryAfterSeconds } }), {
-      status: 429,
-      headers: { "content-type": "application/json; charset=utf-8", "retry-after": String(rl.retryAfterSeconds ?? 60) },
-    });
-  }
+  
 
   const range = parseRange(url.searchParams.get("range"));
   const symbols = parseSymbols(url.searchParams.get("symbols"));
