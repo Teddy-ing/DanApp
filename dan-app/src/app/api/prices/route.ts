@@ -68,10 +68,9 @@ export async function GET(req: NextRequest) {
   try {
     const results = await Promise.all(
       symbols.map(async (symbol) => {
-        const [candles, events] = await Promise.all([
-          fetchDailyCandles(symbol, range, { rapidApiKey }),
-          fetchSplitsAndDividends(symbol, range, { rapidApiKey }),
-        ]);
+        const candles = await fetchDailyCandles(symbol, range, { rapidApiKey });
+        await new Promise((r) => setTimeout(r, 300));
+        const events = await fetchSplitsAndDividends(symbol, range, { rapidApiKey });
         return {
           symbol,
           range,

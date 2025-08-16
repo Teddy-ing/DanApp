@@ -76,10 +76,11 @@ export async function GET(req: NextRequest) {
   try {
     const seriesInputs = await Promise.all(
       symbols.map(async (symbol) => {
-        const [candles, events] = await Promise.all([
-          fetchDailyCandles(symbol, horizon, { rapidApiKey }),
-          fetchSplitsAndDividends(symbol, horizon, { rapidApiKey }),
-        ]);
+        // Sequentialize provider calls per symbol to avoid upstream 429s
+        const candles = await fetchDailyCandles(symbol, horizon, { rapidApiKey });
+        // Small delay to respect upstream per-second limits
+        await new Promise((r) => setTimeout(r, 300));
+        const events = await fetchSplitsAndDividends(symbol, horizon, { rapidApiKey });
         return {
           symbol,
           candles,
