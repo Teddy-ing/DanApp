@@ -48,8 +48,18 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) return jsonError(401, "Unauthorized");
-  const rapidApiKey = await getDecryptedRapidApiKey(userId);
-  if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
+  let rapidApiKey: string;
+  try {
+    const key = await getDecryptedRapidApiKey(userId);
+    if (!key) return jsonError(400, "RapidAPI key not set. Save your key first.");
+    rapidApiKey = key;
+  } catch (e) {
+    const code = (e as Error)?.message || '';
+    if (code === 'MISCONFIG_SECRET') {
+      return jsonError(500, 'Server misconfiguration: missing AUTH_SECRET/NEXTAUTH_SECRET');
+    }
+    return jsonError(400, 'RapidAPI key not set. Save your key first.');
+  }
 
   const rl = await checkRateLimit("returns", userId, 30, 60);
   if (!rl.allowed) {

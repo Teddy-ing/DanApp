@@ -18,7 +18,7 @@ export async function getDecryptedRapidApiKey(userId: string): Promise<string | 
   const record = await redis.getJson<{ iv: string; ciphertext: string }>(`user:${userId}:rapidapiKey`);
   if (!record) return null;
   const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-  if (!secret) return null;
+  if (!secret) throw new Error('MISCONFIG_SECRET');
   try {
     const iv = Uint8Array.from(Buffer.from(record.iv, "base64"));
     const ciphertext = Uint8Array.from(Buffer.from(record.ciphertext, "base64"));
@@ -26,7 +26,7 @@ export async function getDecryptedRapidApiKey(userId: string): Promise<string | 
     const plaintextBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
     return new TextDecoder().decode(plaintextBuf);
   } catch {
-    return null;
+    throw new Error('DECRYPT_FAILED');
   }
 }
 
