@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
 import { validateUsTickerFormat } from "@/lib/ticker";
-import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
@@ -54,13 +53,7 @@ export async function GET(req: NextRequest) {
     return jsonError(400, 'RapidAPI key not set. Save your key first.');
   }
 
-  const rl = await checkRateLimit("prices", userId, 30, 60);
-  if (!rl.allowed) {
-    return new NextResponse(JSON.stringify({ error: { message: "Rate limit exceeded", retryAfterSeconds: rl.retryAfterSeconds } }), {
-      status: 429,
-      headers: { "content-type": "application/json; charset=utf-8", "retry-after": String(rl.retryAfterSeconds ?? 60) },
-    });
-  }
+  // Rate limiting disabled per product decision: requests bill against the user's RapidAPI key
 
   const range = parseRange(url.searchParams.get("range"));
   const symbols = parseSymbols(url.searchParams.get("symbols"));
