@@ -28,6 +28,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - IR Fallback: `src/scrapers/ir.ts` scrapes common issuer IR dividend pages (5s timeout, 1 retry strategy implicit via multi-path attempts), cached 7 days under `ir:{symbol}:divs:v1`.
   - Validation: `src/lib/ticker.ts` validates US tickers (supports class suffix like `BRK-B`) and normalizes to uppercase.
 
+### RapidAPI host
+
+- Default host: `apidojo-yahoo-finance-v1.p.rapidapi.com` (override with env `RAPIDAPI_YF_HOST` if you prefer another provider that supports `GET /stock/v3/get-chart`).
+- Required endpoints used by this app: `GET /stock/v3/get-chart` with `interval=1d`, `range=5y|max`, and `events=div,splits`.
+
 ## Auth
 
 - NextAuth v5 with Google provider is configured in `src/auth.ts` and exposed at `app/api/auth/[...nextauth]/route.ts`.

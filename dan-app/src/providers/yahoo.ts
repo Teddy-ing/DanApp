@@ -92,14 +92,17 @@ async function fetchRapidApiWithBackoff(
   throw buildProviderError(area, lastStatus ?? 502, lastBody);
 }
 
+const RAPID_HOST = process.env.RAPIDAPI_YF_HOST ?? "apidojo-yahoo-finance-v1.p.rapidapi.com";
+const BASE_URL = `https://apidojo-yahoo-finance-v1.p.rapidapi.com`;
+
 export async function fetchDailyCandles(
   symbol: string,
   range: "5y" | "max" | "1y" = "5y",
   auth: RapidApiAuth
 ): Promise<DailyCandle[]> {
   const validSymbol = validateUsTickerFormat(symbol);
-  const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range });
+  const url = `${BASE_URL}/stock/v3/get-chart`;
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, region: "US" });
 
   // Cache key per PRD: yf:{symbol}:prices:v1 (24h)
   const redis = createRedisClient();
@@ -112,7 +115,7 @@ export async function fetchDailyCandles(
     "candles",
     {
       "x-rapidapi-key": auth.rapidApiKey,
-      "x-rapidapi-host": "yh-finance.p.rapidapi.com",
+      "x-rapidapi-host": RAPID_HOST,
     }
   );
 
@@ -213,8 +216,8 @@ export async function fetchSplitsAndDividends(
   auth: RapidApiAuth
 ): Promise<{ splits: SplitEvent[]; dividends: DividendEvent[] }> {
   const validSymbol = validateUsTickerFormat(symbol);
-  const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, events: "div,splits" });
+  const url = `${BASE_URL}/stock/v3/get-chart`;
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, region: "US", events: "div,splits" });
 
   // Cache key per PRD: yf:{symbol}:divs:v1 (24h)
   const redis = createRedisClient();
@@ -227,7 +230,7 @@ export async function fetchSplitsAndDividends(
     "events",
     {
       "x-rapidapi-key": auth.rapidApiKey,
-      "x-rapidapi-host": "yh-finance.p.rapidapi.com",
+      "x-rapidapi-host": RAPID_HOST,
     }
   );
 
