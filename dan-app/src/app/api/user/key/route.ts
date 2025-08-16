@@ -64,15 +64,39 @@ export async function POST(req: NextRequest) {
 	const ivB64 = Buffer.from(iv).toString("base64");
 
 	const redis = createRedisClient();
-	await redis.setJson(`user:${userId}:rapidapiKey`, { iv: ivB64, ciphertext });
-
-	// Verify persistence by immediate read-back
+	// Prefer direct REST writes for determinism in prod
+	const restUrl = process.env.UPSTASH_REDIS_REST_URL;
+	const restToken = process.env.UPSTASH_REDIS_REST_TOKEN;
 	let persisted = false;
-	try {
-		const verify = await redis.getJson<{ iv: string; ciphertext: string }>(`user:${userId}:rapidapiKey`);
-		persisted = !!(verify && typeof verify.ciphertext === "string" && verify.ciphertext.length > 0);
-	} catch {
-		persisted = false;
+	if (restUrl && restToken) {
+		const keyName = `user:${userId}:rapidapiKey`;
+		const payload = JSON.stringify({ iv: ivB64, ciphertext });
+		try {
+			const setRes = await fetch(`${restUrl}/set/${encodeURIComponent(keyName)}/${encodeURIComponent(payload)}`, {
+				method: "POST",
+				headers: { Authorization: `Bearer ${restToken}` },
+			});
+			if (setRes.ok) {
+				const getRes = await fetch(`${restUrl}/get/${encodeURIComponent(keyName)}`, {
+					method: "GET",
+					headers: { Authorization: `Bearer ${restToken}` },
+				});
+				if (getRes.ok) {
+					const txt = await getRes.text();
+					persisted = txt.includes("ciphertext");
+				}
+			}
+		} catch {
+			persisted = false;
+		}
+	} else {
+		await redis.setJson(`user:${userId}:rapidapiKey`, { iv: ivB64, ciphertext });
+		try {
+			const verify = await redis.getJson<{ iv: string; ciphertext: string }>(`user:${userId}:rapidapiKey`);
+			persisted = !!(verify && typeof verify.ciphertext === "string" && verify.ciphertext.length > 0);
+		} catch {
+			persisted = false;
+		}
 	}
 
 	return NextResponse.json({ ok: true, persisted });
@@ -84,6 +108,24 @@ export async function GET() {
 		return unauthorized();
 	}
 	const userId = (session.user as { id: string }).id;
+
+	const restUrl = process.env.UPSTASH_REDIS_REST_URL;
+	const restToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+	if (restUrl && restToken) {
+		try {
+			const keyName = `user:${userId}:rapidapiKey`;
+			const res = await fetch(`${restUrl}/get/${encodeURIComponent(keyName)}`, {
+				method: "GET",
+				headers: { Authorization: `Bearer ${restToken}` },
+			});
+			if (!res.ok) return NextResponse.json({ hasKey: false });
+			const txt = await res.text();
+			const hasKey = txt.includes("ciphertext");
+			return NextResponse.json({ hasKey });
+		} catch {
+			return NextResponse.json({ hasKey: false });
+		}
+	}
 
 	const redis = createRedisClient();
 	const record = await redis.getJson<{ iv: string; ciphertext: string }>(`user:${userId}:rapidapiKey`);
