@@ -155,6 +155,22 @@ export default function KeyModal() {
               >
                 Run key diagnostics
               </button>
+              <span className="mx-2 text-gray-400">•</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/redis/test', { cache: 'no-store' });
+                    const json = await res.json();
+                    alert(JSON.stringify(json, null, 2));
+                  } catch (e) {
+                    alert('Failed to run Redis write test');
+                  }
+                }}
+                className="text-xs underline text-gray-600 dark:text-gray-300 hover:opacity-80"
+              >
+                Run Redis write test
+              </button>
             </div>
           </div>
         </div>
