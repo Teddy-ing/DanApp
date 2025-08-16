@@ -66,7 +66,16 @@ export async function POST(req: NextRequest) {
 	const redis = createRedisClient();
 	await redis.setJson(`user:${userId}:rapidapiKey`, { iv: ivB64, ciphertext });
 
-	return NextResponse.json({ ok: true });
+	// Verify persistence by immediate read-back
+	let persisted = false;
+	try {
+		const verify = await redis.getJson<{ iv: string; ciphertext: string }>(`user:${userId}:rapidapiKey`);
+		persisted = !!(verify && typeof verify.ciphertext === "string" && verify.ciphertext.length > 0);
+	} catch {
+		persisted = false;
+	}
+
+	return NextResponse.json({ ok: true, persisted });
 }
 
 export async function GET() {

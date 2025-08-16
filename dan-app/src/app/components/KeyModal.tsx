@@ -63,7 +63,7 @@ export default function KeyModal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rapidapiKey }),
       });
-      const data: SaveResponse = await res.json();
+      const data: SaveResponse & { persisted?: boolean } = await res.json();
       if (!res.ok || data?.ok !== true) {
         throw new Error(data?.error?.message || 'Failed to save key');
       }
@@ -71,6 +71,9 @@ export default function KeyModal() {
       setToast('RapidAPI key saved');
       setOpen(false);
       setRapidapiKey('');
+      if (data?.persisted === false) {
+        setToast('Saved, but could not verify persistence');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save key');
     } finally {
