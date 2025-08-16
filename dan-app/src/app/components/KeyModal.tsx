@@ -15,19 +15,24 @@ export default function KeyModal() {
 
   useEffect(() => {
     let cancelled = false;
+    // Optimistic local hint while server loads
+    try {
+      const local = typeof window !== 'undefined' ? window.localStorage.getItem('rapidapiKey:has') : null;
+      if (local === '1') setHasKey(true);
+    } catch {}
     async function loadStatus() {
       try {
         const res = await fetch('/api/user/key', { method: 'GET', cache: 'no-store' });
+        if (!res.ok) return; // keep previous state on auth/network issues
         const data: StatusResponse = await res.json();
-        if (!cancelled) {
-          if ('hasKey' in data) {
-            setHasKey(Boolean(data.hasKey));
-          } else {
-            setHasKey(false);
-          }
+        if (!cancelled && 'hasKey' in data) {
+          setHasKey(Boolean(data.hasKey));
+          try {
+            window.localStorage.setItem('rapidapiKey:has', data.hasKey ? '1' : '0');
+          } catch {}
         }
       } catch {
-        if (!cancelled) setHasKey(false);
+        // ignore; keep existing indicator
       }
     }
     loadStatus();
@@ -71,6 +76,7 @@ export default function KeyModal() {
         throw new Error(data?.error?.message || 'Failed to save key');
       }
       setHasKey(true);
+      try { window.localStorage.setItem('rapidapiKey:has', '1'); } catch {}
       setToast('RapidAPI key saved');
       setOpen(false);
       setRapidapiKey('');

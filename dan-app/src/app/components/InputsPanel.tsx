@@ -159,8 +159,14 @@ export default function InputsPanel() {
           symbols={symbols}
           base={base}
           horizon={horizon}
+          pendingInput={input}
           requested={requested}
-          onRequest={() => setRequested(true)}
+          onRequest={(pending) => {
+            if (pending.trim().length > 0) {
+              addSymbol(pending);
+            }
+            setRequested(true);
+          }}
         />
       </div>
     </section>
@@ -171,10 +177,11 @@ function FetchReturns(props: {
   symbols: string[];
   base: number;
   horizon: Horizon;
+  pendingInput: string;
   requested: boolean;
-  onRequest: () => void;
+  onRequest: (pendingInput: string) => void;
 }) {
-  const { symbols, base, horizon, requested, onRequest } = props;
+  const { symbols, base, horizon, pendingInput, requested, onRequest } = props;
   const queryKey = useMemo(() => ['returns', { symbols, base, horizon }], [symbols, base, horizon]);
   const queryEnabled = requested && symbols.length > 0;
 
@@ -211,13 +218,23 @@ function FetchReturns(props: {
     },
   });
 
-  const hasParams = symbols.length > 0;
+  const hasParams = useMemo(() => {
+    if (symbols.length > 0) return true;
+    const candidate = pendingInput.trim();
+    if (!candidate) return false;
+    try {
+      validateUsTickerFormat(candidate);
+      return true;
+    } catch {
+      return false;
+    }
+  }, [symbols, pendingInput]);
 
   return (
     <div className="mt-2">
       <button
         type="button"
-        onClick={() => onRequest()}
+        onClick={() => onRequest(pendingInput)}
         disabled={!hasParams || query.isFetching}
         className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
       >
