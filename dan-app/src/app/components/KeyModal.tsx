@@ -15,11 +15,6 @@ export default function KeyModal() {
 
   useEffect(() => {
     let cancelled = false;
-    // Optimistic local hint while server loads
-    try {
-      const local = typeof window !== 'undefined' ? window.localStorage.getItem('rapidapiKey:has') : null;
-      if (local === '1') setHasKey(true);
-    } catch {}
     async function loadStatus() {
       try {
         const res = await fetch('/api/user/key', { method: 'GET', cache: 'no-store' });
@@ -27,9 +22,6 @@ export default function KeyModal() {
         const data: StatusResponse = await res.json();
         if (!cancelled && 'hasKey' in data) {
           setHasKey(Boolean(data.hasKey));
-          try {
-            window.localStorage.setItem('rapidapiKey:has', data.hasKey ? '1' : '0');
-          } catch {}
         }
       } catch {
         // ignore; keep existing indicator
@@ -76,7 +68,6 @@ export default function KeyModal() {
         throw new Error(data?.error?.message || 'Failed to save key');
       }
       setHasKey(true);
-      try { window.localStorage.setItem('rapidapiKey:has', '1'); } catch {}
       setToast('RapidAPI key saved');
       setOpen(false);
       setRapidapiKey('');
@@ -96,7 +87,11 @@ export default function KeyModal() {
       >
         Connect RapidAPI key
       </button>
-      {statusBadge}
+      {hasKey === null ? (
+        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 text-gray-800 dark:bg-neutral-800 dark:text-gray-200 px-2 py-0.5 text-xs">Checking…</span>
+      ) : (
+        statusBadge
+      )}
 
       {toast && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-2 text-sm shadow">
@@ -141,6 +136,23 @@ export default function KeyModal() {
                 </button>
               </div>
             </form>
+            <div className="mt-4 border-t border-black/10 dark:border-white/15 pt-4">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/user/key/debug', { cache: 'no-store' });
+                    const json = await res.json();
+                    alert(JSON.stringify(json, null, 2));
+                  } catch (e) {
+                    alert('Failed to run diagnostics');
+                  }
+                }}
+                className="text-xs underline text-gray-600 dark:text-gray-300 hover:opacity-80"
+              >
+                Run key diagnostics
+              </button>
+            </div>
           </div>
         </div>
       )}
