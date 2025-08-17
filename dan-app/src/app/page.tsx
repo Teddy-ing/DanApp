@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import KeyModal from "@/app/components/KeyModal";
+import ExportButton from "@/app/components/ExportButton";
 import InputsPanel from "@/app/components/InputsPanel";
 import ReturnsShell from "@/app/components/ReturnsShell";
 
@@ -28,6 +29,7 @@ export default async function Home() {
           <span>Signed in as {session.user.email || session.user.name}</span>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <ExportButton />
           <KeyModal />
           <Link className="underline" href="/api/auth/signout">Sign out</Link>
         </div>
