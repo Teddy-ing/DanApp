@@ -31,8 +31,15 @@ export default async function Home() {
           <Link className="underline" href="/api/auth/signout">Sign out</Link>
         </div>
       </header>
-      <main id="main-content" className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <InputsPanel />
+      <main id="main-content" className="row-start-2 w-full max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-6">
+          <div className="md:sticky md:top-6 self-start">
+            <InputsPanel />
+          </div>
+          <div className="flex flex-col gap-6">
+            {/* The charts render inside InputsPanel via query success; this container ensures layout */}
+          </div>
+        </div>
       </main>
       <footer className="row-start-3 w-full text-center text-xs text-gray-600 dark:text-gray-400 py-4">
         <p>

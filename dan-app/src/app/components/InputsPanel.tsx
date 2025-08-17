@@ -241,9 +241,9 @@ function FetchReturns(props: {
       )}
 
       {priceQuery.error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{(priceQuery.error as Error).message}</p>}
-      {priceQuery.isSuccess && (
+      {(priceQuery.isSuccess || query.isSuccess) && (
         <div className="mt-4">
-          <PriceChart items={priceQuery.data.items.map((i) => ({ symbol: i.symbol, candles: i.candles }))} />
+          <PriceChart items={(priceQuery.data?.items || (query.data ? query.data.series.map(s => ({ symbol: s.symbol, candles: [] })) : [])) as any} />
         </div>
       )}
     </div>
