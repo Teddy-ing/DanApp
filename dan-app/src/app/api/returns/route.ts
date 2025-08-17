@@ -72,6 +72,9 @@ export async function GET(req: NextRequest) {
 
   const horizon = parseHorizon(url.searchParams.get("horizon"));
   const base = parseBase(url.searchParams.get("base"));
+  const period1 = url.searchParams.get("period1");
+  const period2 = url.searchParams.get("period2");
+  const customSpan = period1 ? { period1: Number(period1), period2: period2 ? Number(period2) : undefined } : undefined;
 
   try {
     // Process symbols sequentially with staggering to reduce upstream 429s
@@ -83,9 +86,9 @@ export async function GET(req: NextRequest) {
     }>;
     for (let idx = 0; idx < symbols.length; idx += 1) {
       const symbol = symbols[idx]!;
-      const candles = await fetchDailyCandles(symbol, horizon, { rapidApiKey });
+      const candles = await fetchDailyCandles(symbol, customSpan ?? horizon, { rapidApiKey });
       await new Promise((r) => setTimeout(r, 500));
-      const events = await fetchSplitsAndDividends(symbol, horizon, { rapidApiKey });
+      const events = await fetchSplitsAndDividends(symbol, customSpan ?? horizon, { rapidApiKey });
       seriesInputs.push({ symbol, candles, splits: events.splits, dividends: events.dividends });
       // Stagger next symbol
       if (idx < symbols.length - 1) await new Promise((r) => setTimeout(r, 800));

@@ -147,7 +147,7 @@ export default function KeyModal() {
                     const res = await fetch('/api/user/key/debug', { cache: 'no-store' });
                     const json = await res.json();
                     alert(JSON.stringify(json, null, 2));
-                  } catch (e) {
+                  } catch {
                     alert('Failed to run diagnostics');
                   }
                 }}
@@ -163,7 +163,7 @@ export default function KeyModal() {
                     const res = await fetch('/api/redis/test', { cache: 'no-store' });
                     const json = await res.json();
                     alert(JSON.stringify(json, null, 2));
-                  } catch (e) {
+                  } catch {
                     alert('Failed to run Redis write test');
                   }
                 }}

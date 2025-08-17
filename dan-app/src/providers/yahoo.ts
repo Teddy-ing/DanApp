@@ -97,12 +97,18 @@ const BASE_URL = `https://apidojo-yahoo-finance-v1.p.rapidapi.com`;
 
 export async function fetchDailyCandles(
   symbol: string,
-  range: "5y" | "max" | "1y" = "5y",
+  span: { period1: number; period2?: number } | ("5y" | "max" | "1y") = "5y",
   auth: RapidApiAuth
 ): Promise<DailyCandle[]> {
   const validSymbol = validateUsTickerFormat(symbol);
   const url = `${BASE_URL}/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, region: "US" });
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", region: "US" });
+  if (typeof span === "string") {
+    params.set("range", span);
+  } else {
+    params.set("period1", String(span.period1));
+    if (span.period2) params.set("period2", String(span.period2));
+  }
 
   // Cache key per PRD: yf:{symbol}:prices:v1 (24h)
   const redis = createRedisClient();
@@ -212,12 +218,18 @@ export type DividendEvent = {
 
 export async function fetchSplitsAndDividends(
   symbol: string,
-  range: "5y" | "max" | "1y" = "max",
+  span: { period1: number; period2?: number } | ("5y" | "max" | "1y") = "max",
   auth: RapidApiAuth
 ): Promise<{ splits: SplitEvent[]; dividends: DividendEvent[] }> {
   const validSymbol = validateUsTickerFormat(symbol);
   const url = `${BASE_URL}/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, region: "US", events: "div,splits" });
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", region: "US", events: "div,splits" });
+  if (typeof span === "string") {
+    params.set("range", span);
+  } else {
+    params.set("period1", String(span.period1));
+    if (span.period2) params.set("period2", String(span.period2));
+  }
 
   // Cache key per PRD: yf:{symbol}:divs:v1 (24h)
   const redis = createRedisClient();
@@ -290,6 +302,7 @@ function sanitizeNum(value: number | null | undefined): number | null {
   return typeof value === "number" && isFinite(value) ? value : null;
 }
 
+// kept for potential future logging needs
 async function safeText(res: Response): Promise<string> {
   try {
     return await res.text();

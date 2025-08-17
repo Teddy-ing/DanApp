@@ -14,6 +14,7 @@ export default function InputsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [base, setBase] = useState<number>(1000);
   const [horizon, setHorizon] = useState<Horizon>('5y');
+  const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>({ enabled: false, start: '', end: '' });
   const [requested, setRequested] = useState(false);
 
   const canAddMore = symbols.length < 5;
@@ -152,6 +153,24 @@ export default function InputsPanel() {
                 max
               </button>
             </div>
+            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+              <label className="inline-flex items-center gap-2">
+                <input type="checkbox" checked={custom.enabled} onChange={(e) => setCustom((c) => ({ ...c, enabled: e.target.checked }))} />
+                Custom range
+              </label>
+            </div>
+            {custom.enabled && (
+              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs mb-1">Start</label>
+                  <input type="date" value={custom.start} onChange={(e) => setCustom((c) => ({ ...c, start: e.target.value }))} className="w-full rounded-md border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs mb-1">End</label>
+                  <input type="date" value={custom.end} onChange={(e) => setCustom((c) => ({ ...c, end: e.target.value }))} className="w-full rounded-md border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 px-2 py-1 text-sm" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -160,6 +179,7 @@ export default function InputsPanel() {
           base={base}
           horizon={horizon}
           requested={requested}
+          custom={custom}
           onRequest={() => setRequested(true)}
         />
       </div>
@@ -172,9 +192,10 @@ function FetchReturns(props: {
   base: number;
   horizon: Horizon;
   requested: boolean;
+  custom: { enabled: boolean; start: string; end: string };
   onRequest: () => void;
 }) {
-  const { symbols, base, horizon, requested, onRequest } = props;
+  const { symbols, base, horizon, requested, custom, onRequest } = props;
   const queryKey = useMemo(() => ['returns', { symbols, base, horizon }], [symbols, base, horizon]);
   const queryEnabled = requested && symbols.length > 0;
 
@@ -186,6 +207,14 @@ function FetchReturns(props: {
       params.set('symbols', symbols.join(','));
       params.set('horizon', horizon);
       params.set('base', String(base));
+      // Forward custom period if enabled
+      const nowSec = Math.floor(Date.now() / 1000);
+      if ((document as any) && custom.enabled) {
+        const start = custom.start ? Math.floor(new Date(custom.start + 'T00:00:00Z').getTime() / 1000) : undefined;
+        const end = custom.end ? Math.floor(new Date(custom.end + 'T23:59:59Z').getTime() / 1000) : nowSec;
+        if (start) params.set('period1', String(start));
+        if (start) params.set('period2', String(end));
+      }
       const res = await fetch(`/api/returns?${params.toString()}`, { headers: { 'accept-encoding': 'gzip' }, cache: 'no-store' });
       const text = await res.text();
       const data = JSON.parse(text);
@@ -207,6 +236,13 @@ function FetchReturns(props: {
       params.set('symbols', symbols.join(','));
       // Map horizon to a sensible range for price chart
       params.set('range', horizon);
+      const nowSec = Math.floor(Date.now() / 1000);
+      if ((document as any) && custom.enabled) {
+        const start = custom.start ? Math.floor(new Date(custom.start + 'T00:00:00Z').getTime() / 1000) : undefined;
+        const end = custom.end ? Math.floor(new Date(custom.end + 'T23:59:59Z').getTime() / 1000) : nowSec;
+        if (start) params.set('period1', String(start));
+        if (start) params.set('period2', String(end));
+      }
       const res = await fetch(`/api/prices?${params.toString()}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error?.message || 'Prices request failed');
@@ -243,7 +279,18 @@ function FetchReturns(props: {
       {priceQuery.error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{(priceQuery.error as Error).message}</p>}
       {(priceQuery.isSuccess || query.isSuccess) && (
         <div className="mt-4">
-          <PriceChart items={(priceQuery.data?.items || (query.data ? query.data.series.map(s => ({ symbol: s.symbol, candles: [] })) : [])) as any} />
+          <PriceChart
+            items={
+              (priceQuery.data?.items
+                ? priceQuery.data.items.map((i) => ({
+                    symbol: i.symbol,
+                    candles: i.candles.map((c: any) => ({ dateUtcSeconds: (c as any).dateUtcSeconds ?? (c as any).date ?? 0, close: (c as any).close ?? null })),
+                  }))
+                : query.data
+                ? query.data.series.map((s) => ({ symbol: s.symbol, candles: [] as Array<{ dateUtcSeconds: number; close: number | null }> }))
+                : []) as Array<{ symbol: string; candles: { dateUtcSeconds: number; close: number | null }[] }>
+            }
+          />
         </div>
       )}
     </div>

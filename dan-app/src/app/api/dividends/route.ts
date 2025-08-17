@@ -3,7 +3,6 @@ import { fetchSplitsAndDividends } from "@/providers/yahoo";
 import { toNyDateString, nyTodayDateString } from "@/lib/calendar";
 import { scrapeIssuerDividends } from "@/scrapers/ir";
 import { validateUsTickerFormat } from "@/lib/ticker";
-import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";

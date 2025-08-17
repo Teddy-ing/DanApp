@@ -56,6 +56,9 @@ export async function GET(req: NextRequest) {
   // Rate limiting disabled per product decision: requests bill against the user's RapidAPI key
 
   const range = parseRange(url.searchParams.get("range"));
+  const period1 = url.searchParams.get("period1");
+  const period2 = url.searchParams.get("period2");
+  const customSpan = period1 ? { period1: Number(period1), period2: period2 ? Number(period2) : undefined } : undefined;
   const symbols = parseSymbols(url.searchParams.get("symbols"));
 
   if (symbols.length === 0) {
@@ -69,9 +72,9 @@ export async function GET(req: NextRequest) {
     const results = [] as Array<{ symbol: string; range: typeof range; candles: Awaited<ReturnType<typeof fetchDailyCandles>>; splits: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["splits"] }>;
     for (let idx = 0; idx < symbols.length; idx += 1) {
       const symbol = symbols[idx]!;
-      const candles = await fetchDailyCandles(symbol, range, { rapidApiKey });
+      const candles = await fetchDailyCandles(symbol, customSpan ?? range, { rapidApiKey });
       await new Promise((r) => setTimeout(r, 500));
-      const events = await fetchSplitsAndDividends(symbol, range, { rapidApiKey });
+      const events = await fetchSplitsAndDividends(symbol, customSpan ?? range, { rapidApiKey });
       results.push({ symbol, range, candles, splits: events.splits });
       if (idx < symbols.length - 1) await new Promise((r) => setTimeout(r, 800));
     }
