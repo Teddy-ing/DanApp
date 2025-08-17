@@ -282,9 +282,9 @@ function FetchReturns(props: {
           <PriceChart
             items={
               (priceQuery.data?.items
-                ? priceQuery.data.items.map((i) => ({
+                ? (priceQuery.data.items as unknown as Array<{ symbol: string; candles: Array<{ dateUtcSeconds?: number; date?: number; close?: number | null }> }>).map((i) => ({
                     symbol: i.symbol,
-                    candles: (i.candles as Array<any>).map((c) => ({
+                    candles: i.candles.map((c) => ({
                       dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
                       close: typeof c.close === 'number' ? c.close : null,
                     })),
