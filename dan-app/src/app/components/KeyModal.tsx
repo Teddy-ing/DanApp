@@ -18,16 +18,13 @@ export default function KeyModal() {
     async function loadStatus() {
       try {
         const res = await fetch('/api/user/key', { method: 'GET', cache: 'no-store' });
+        if (!res.ok) return; // keep previous state on auth/network issues
         const data: StatusResponse = await res.json();
-        if (!cancelled) {
-          if ('hasKey' in data) {
-            setHasKey(Boolean(data.hasKey));
-          } else {
-            setHasKey(false);
-          }
+        if (!cancelled && 'hasKey' in data) {
+          setHasKey(Boolean(data.hasKey));
         }
       } catch {
-        if (!cancelled) setHasKey(false);
+        // ignore; keep existing indicator
       }
     }
     loadStatus();
@@ -66,7 +63,7 @@ export default function KeyModal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rapidapiKey }),
       });
-      const data: SaveResponse = await res.json();
+      const data: SaveResponse & { persisted?: boolean } = await res.json();
       if (!res.ok || data?.ok !== true) {
         throw new Error(data?.error?.message || 'Failed to save key');
       }
@@ -74,6 +71,9 @@ export default function KeyModal() {
       setToast('RapidAPI key saved');
       setOpen(false);
       setRapidapiKey('');
+      if (data?.persisted === false) {
+        setToast('Saved, but could not verify persistence');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save key');
     } finally {
@@ -90,7 +90,11 @@ export default function KeyModal() {
       >
         Connect RapidAPI key
       </button>
-      {statusBadge}
+      {hasKey === null ? (
+        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 text-gray-800 dark:bg-neutral-800 dark:text-gray-200 px-2 py-0.5 text-xs">Checking…</span>
+      ) : (
+        statusBadge
+      )}
 
       {toast && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-2 text-sm shadow">
@@ -135,6 +139,39 @@ export default function KeyModal() {
                 </button>
               </div>
             </form>
+            <div className="mt-4 border-t border-black/10 dark:border-white/15 pt-4">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/user/key/debug', { cache: 'no-store' });
+                    const json = await res.json();
+                    alert(JSON.stringify(json, null, 2));
+                  } catch {
+                    alert('Failed to run diagnostics');
+                  }
+                }}
+                className="text-xs underline text-gray-600 dark:text-gray-300 hover:opacity-80"
+              >
+                Run key diagnostics
+              </button>
+              <span className="mx-2 text-gray-400">•</span>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const res = await fetch('/api/redis/test', { cache: 'no-store' });
+                    const json = await res.json();
+                    alert(JSON.stringify(json, null, 2));
+                  } catch {
+                    alert('Failed to run Redis write test');
+                  }
+                }}
+                className="text-xs underline text-gray-600 dark:text-gray-300 hover:opacity-80"
+              >
+                Run Redis write test
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
 
-type Candle = { date: string; open: number; high: number; low: number; close: number; volume: number };
+type Candle = { dateUtcSeconds: number; close: number | null };
 
 export default function PriceChart(props: { items: Array<{ symbol: string; candles: Candle[] }> }) {
   const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
@@ -13,9 +13,9 @@ export default function PriceChart(props: { items: Array<{ symbol: string; candl
     const map = new Map<string, Record<string, number | string | null>>();
     for (const item of props.items) {
       for (const c of item.candles) {
-        const key = c.date;
+        const key = new Date((c.dateUtcSeconds ?? 0) * 1000).toISOString().slice(0, 10);
         if (!map.has(key)) map.set(key, { date: key });
-        map.get(key)![item.symbol] = c.close;
+        map.get(key)![item.symbol] = c.close ?? null;
       }
     }
     const rows = Array.from(map.values());
@@ -24,7 +24,7 @@ export default function PriceChart(props: { items: Array<{ symbol: string; candl
   }, [props.items]);
 
   return (
-    <div className="h-[280px] w-full">
+    <div className="h-[360px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={merged} margin={{ left: 12, right: 12, top: 8, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgb(0 0 0 / 0.06)" />

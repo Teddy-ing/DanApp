@@ -52,14 +52,63 @@ export type DailyCandle = {
   adjClose: number | null;
 };
 
+async function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function shouldRetry(status: number | undefined): boolean {
+  if (!status) return true; // network errors
+  return status === 429 || status >= 500;
+}
+
+async function fetchRapidApiWithBackoff(
+  url: string,
+  area: "candles" | "events",
+  headers: Record<string, string>,
+  attemptLimit: number = 4
+): Promise<Response> {
+  let lastStatus: number | undefined;
+  let lastBody = "";
+  for (let attempt = 1; attempt <= attemptLimit; attempt += 1) {
+    try {
+      const res = await fetchWithTimeout(url, { timeoutMs: 8000, headers, cache: "no-store" });
+      if (res.ok) return res;
+      lastStatus = res.status;
+      try { lastBody = await res.text(); } catch { lastBody = ""; }
+      if (!shouldRetry(res.status)) {
+        throw buildProviderError(area, res.status, lastBody);
+      }
+    } catch (e) {
+      // network/timeout or thrown above
+      if (lastStatus && !shouldRetry(lastStatus)) throw e as Error;
+    }
+    // exponential backoff with jitter
+    const base = 600; // ms
+    const backoff = Math.min(base * 2 ** (attempt - 1), 4000);
+    const jitter = Math.floor(Math.random() * 250);
+    await delay(backoff + jitter);
+  }
+  // Exhausted
+  throw buildProviderError(area, lastStatus ?? 502, lastBody);
+}
+
+const RAPID_HOST = process.env.RAPIDAPI_YF_HOST ?? "apidojo-yahoo-finance-v1.p.rapidapi.com";
+const BASE_URL = `https://apidojo-yahoo-finance-v1.p.rapidapi.com`;
+
 export async function fetchDailyCandles(
   symbol: string,
-  range: "5y" | "max" | "1y" = "5y",
+  span: { period1: number; period2?: number } | ("5y" | "max" | "1y") = "5y",
   auth: RapidApiAuth
 ): Promise<DailyCandle[]> {
   const validSymbol = validateUsTickerFormat(symbol);
-  const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range });
+  const url = `${BASE_URL}/stock/v3/get-chart`;
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", region: "US" });
+  if (typeof span === "string") {
+    params.set("range", span);
+  } else {
+    params.set("period1", String(span.period1));
+    if (span.period2) params.set("period2", String(span.period2));
+  }
 
   // Cache key per PRD: yf:{symbol}:prices:v1 (24h)
   const redis = createRedisClient();
@@ -67,19 +116,14 @@ export async function fetchDailyCandles(
   const cached = await redis.getJson<DailyCandle[]>(cacheKey);
   if (cached) return cached;
 
-  const res = await fetchWithTimeout(`${url}?${params.toString()}`, {
-    timeoutMs: 8000,
-    headers: {
+  const res = await fetchRapidApiWithBackoff(
+    `${url}?${params.toString()}`,
+    "candles",
+    {
       "x-rapidapi-key": auth.rapidApiKey,
-      "x-rapidapi-host": "yh-finance.p.rapidapi.com",
-    },
-    // Conservative timeout via AbortController left to callers if needed
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw buildProviderError("candles", res.status, await safeText(res));
-  }
+      "x-rapidapi-host": RAPID_HOST,
+    }
+  );
 
   const json = await res.json();
   const parsed = chartResponseSchema.safeParse(json);
@@ -174,12 +218,18 @@ export type DividendEvent = {
 
 export async function fetchSplitsAndDividends(
   symbol: string,
-  range: "5y" | "max" | "1y" = "max",
+  span: { period1: number; period2?: number } | ("5y" | "max" | "1y") = "max",
   auth: RapidApiAuth
 ): Promise<{ splits: SplitEvent[]; dividends: DividendEvent[] }> {
   const validSymbol = validateUsTickerFormat(symbol);
-  const url = `https://yh-finance.p.rapidapi.com/stock/v3/get-chart`;
-  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", range, events: "div,splits" });
+  const url = `${BASE_URL}/stock/v3/get-chart`;
+  const params = new URLSearchParams({ symbol: validSymbol, interval: "1d", region: "US", events: "div,splits" });
+  if (typeof span === "string") {
+    params.set("range", span);
+  } else {
+    params.set("period1", String(span.period1));
+    if (span.period2) params.set("period2", String(span.period2));
+  }
 
   // Cache key per PRD: yf:{symbol}:divs:v1 (24h)
   const redis = createRedisClient();
@@ -187,18 +237,14 @@ export async function fetchSplitsAndDividends(
   const cached = await redis.getJson<{ splits: SplitEvent[]; dividends: DividendEvent[] }>(cacheKey);
   if (cached) return cached;
 
-  const res = await fetchWithTimeout(`${url}?${params.toString()}`, {
-    timeoutMs: 8000,
-    headers: {
+  const res = await fetchRapidApiWithBackoff(
+    `${url}?${params.toString()}`,
+    "events",
+    {
       "x-rapidapi-key": auth.rapidApiKey,
-      "x-rapidapi-host": "yh-finance.p.rapidapi.com",
-    },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw buildProviderError("events", res.status, await safeText(res));
-  }
+      "x-rapidapi-host": RAPID_HOST,
+    }
+  );
 
   const json = await res.json();
   const parsed = eventsResponseSchema.safeParse(json);
@@ -256,6 +302,8 @@ function sanitizeNum(value: number | null | undefined): number | null {
   return typeof value === "number" && isFinite(value) ? value : null;
 }
 
+// kept for potential future logging needs
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function safeText(res: Response): Promise<string> {
   try {
     return await res.text();

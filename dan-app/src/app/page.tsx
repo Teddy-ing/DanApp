@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import KeyModal from "@/app/components/KeyModal";
 import InputsPanel from "@/app/components/InputsPanel";
+import ReturnsShell from "@/app/components/ReturnsShell";
 
 export default async function Home() {
   const session = await auth();
@@ -31,8 +32,8 @@ export default async function Home() {
           <Link className="underline" href="/api/auth/signout">Sign out</Link>
         </div>
       </header>
-      <main id="main-content" className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <InputsPanel />
+      <main id="main-content" className="row-start-2 w-full">
+        <ReturnsShell />
       </main>
       <footer className="row-start-3 w-full text-center text-xs text-gray-600 dark:text-gray-400 py-4">
         <p>
