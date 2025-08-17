@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "Stock Total-Return Visualizer",
   description: "DRIP total return comparison across tickers",
   icons: {
-    icon: "/icon.png",
+    icon: "/favicon.ico",
   },
 };
 
