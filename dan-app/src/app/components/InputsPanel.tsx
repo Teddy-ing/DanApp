@@ -178,7 +178,7 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
         <div className="mt-2">
           <button
             type="button"
-            onClick={() => { if (symbols.length > 0) onFetch({ symbols, base, horizon, custom }); }}
+            onClick={() => { if (symbols.length > 0) { onFetch({ symbols, base, horizon, custom }); if (typeof window !== 'undefined') { window.localStorage.setItem('lastFetchParams', JSON.stringify({ symbols, base, horizon, custom })); } } }}
             disabled={symbols.length === 0}
             className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >

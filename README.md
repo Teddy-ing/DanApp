@@ -27,6 +27,21 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Caching: Uses Upstash Redis via `src/lib/redis.ts` with TTLs per PRD (`yf:{symbol}:prices:v1`, `yf:{symbol}:divs:v1`, 24h).
   - IR Fallback: `src/scrapers/ir.ts` scrapes common issuer IR dividend pages (5s timeout, 1 retry strategy implicit via multi-path attempts), cached 7 days under `ir:{symbol}:divs:v1`.
   - Validation: `src/lib/ticker.ts` validates US tickers (supports class suffix like `BRK-B`) and normalizes to uppercase.
+  
+### UI
+
+- Returns/Price charts now include labels:
+  - Returns chart: "Returns from {amount} in {symbols} at {starting point}" where amount is USD-formatted, symbols are comma-joined, and starting point is the first date of the series.
+  - Price chart: "Price of {symbols}" using the same symbol display.
+  - Implemented in `src/app/components/ReturnsView.tsx`.
+
+### Excel export (XLSX)
+
+- Server-side export (ExcelJS) with an "Export to Excel" button in the header.
+- One sheet per symbol: Date, Close, Dividend/Share, Split Ratio, Shares (pre), Reinvested Shares, Total Shares, Value, Return %.
+- Full DRIP implemented as Excel formulas: splits applied first, then dividends reinvested at that day’s close; no costs.
+- Summary sheet includes parameters and per-symbol Start/End, Final Value, Total Return, and CAGR.
+- File name pattern: `returns_{SYMBOLS}_{RANGE}_{YYYYMMDD}.xlsx`. Target: desktop Excel.
 
 ### RapidAPI host
 
