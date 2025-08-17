@@ -303,6 +303,7 @@ function sanitizeNum(value: number | null | undefined): number | null {
 }
 
 // kept for potential future logging needs
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function safeText(res: Response): Promise<string> {
   try {
     return await res.text();

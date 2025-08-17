@@ -209,7 +209,7 @@ function FetchReturns(props: {
       params.set('base', String(base));
       // Forward custom period if enabled
       const nowSec = Math.floor(Date.now() / 1000);
-      if ((document as any) && custom.enabled) {
+      if (typeof document !== 'undefined' && custom.enabled) {
         const start = custom.start ? Math.floor(new Date(custom.start + 'T00:00:00Z').getTime() / 1000) : undefined;
         const end = custom.end ? Math.floor(new Date(custom.end + 'T23:59:59Z').getTime() / 1000) : nowSec;
         if (start) params.set('period1', String(start));
@@ -237,7 +237,7 @@ function FetchReturns(props: {
       // Map horizon to a sensible range for price chart
       params.set('range', horizon);
       const nowSec = Math.floor(Date.now() / 1000);
-      if ((document as any) && custom.enabled) {
+      if (typeof document !== 'undefined' && custom.enabled) {
         const start = custom.start ? Math.floor(new Date(custom.start + 'T00:00:00Z').getTime() / 1000) : undefined;
         const end = custom.end ? Math.floor(new Date(custom.end + 'T23:59:59Z').getTime() / 1000) : nowSec;
         if (start) params.set('period1', String(start));
@@ -284,7 +284,10 @@ function FetchReturns(props: {
               (priceQuery.data?.items
                 ? priceQuery.data.items.map((i) => ({
                     symbol: i.symbol,
-                    candles: i.candles.map((c: any) => ({ dateUtcSeconds: (c as any).dateUtcSeconds ?? (c as any).date ?? 0, close: (c as any).close ?? null })),
+                    candles: (i.candles as Array<any>).map((c) => ({
+                      dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
+                      close: typeof c.close === 'number' ? c.close : null,
+                    })),
                   }))
                 : query.data
                 ? query.data.series.map((s) => ({ symbol: s.symbol, candles: [] as Array<{ dateUtcSeconds: number; close: number | null }> }))
