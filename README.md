@@ -35,6 +35,14 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Price chart: "Price of {symbols}" using the same symbol display.
   - Implemented in `src/app/components/ReturnsView.tsx`.
 
+### Excel export (XLSX)
+
+- Server-side export (ExcelJS) with an "Export to Excel" button in the header.
+- One sheet per symbol: Date, Close, Dividend/Share, Split Ratio, Shares (pre), Reinvested Shares, Total Shares, Value, Return %.
+- Full DRIP implemented as Excel formulas: splits applied first, then dividends reinvested at that day’s close; no costs.
+- Summary sheet includes parameters and per-symbol Start/End, Final Value, Total Return, and CAGR.
+- File name pattern: `returns_{SYMBOLS}_{RANGE}_{YYYYMMDD}.xlsx`. Target: desktop Excel.
+
 ### RapidAPI host
 
 - Default host: `apidojo-yahoo-finance-v1.p.rapidapi.com` (override with env `RAPIDAPI_YF_HOST` if you prefer another provider that supports `GET /stock/v3/get-chart`).

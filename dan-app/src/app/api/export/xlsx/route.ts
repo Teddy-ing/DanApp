@@ -5,6 +5,7 @@ import { getDecryptedRapidApiKey } from "@/lib/userKey";
 import { fetchDailyCandles, fetchSplitsAndDividends, DailyCandle, DividendEvent, SplitEvent } from "@/providers/yahoo";
 
 type Horizon = "5y" | "max" | "1y";
+type SpanArg = { period1: number; period2?: number } | Horizon;
 
 export async function POST(req: NextRequest) {
   // Auth and RapidAPI key
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
   const horizon: Horizon = body.horizon === "max" ? "max" : "5y";
   const custom = body.custom && body.custom.enabled ? body.custom : { enabled: false, start: "", end: "" };
 
-  const span = custom.enabled
+  const span: SpanArg = custom.enabled
     ? { period1: Math.floor(new Date(custom.start + "T00:00:00Z").getTime() / 1000) || Math.floor(Date.now() / 1000) - 86400 * 365 * 5,
         period2: Math.floor(new Date(custom.end + "T23:59:59Z").getTime() / 1000) || Math.floor(Date.now() / 1000) }
     : horizon;
@@ -37,8 +38,8 @@ export async function POST(req: NextRequest) {
   const perSymbol: Array<{ symbol: string; candles: DailyCandle[]; dividends: DividendEvent[]; splits: SplitEvent[] }> = [];
   for (let i = 0; i < symbols.length; i += 1) {
     const symbol = symbols[i]!;
-    const candles = await fetchDailyCandles(symbol, span as any, { rapidApiKey });
-    const events = await fetchSplitsAndDividends(symbol, span as any, { rapidApiKey });
+    const candles = await fetchDailyCandles(symbol, span, { rapidApiKey });
+    const events = await fetchSplitsAndDividends(symbol, span, { rapidApiKey });
     perSymbol.push({ symbol, candles, dividends: events.dividends, splits: events.splits });
     if (i < symbols.length - 1) await new Promise((r) => setTimeout(r, 600));
   }
@@ -145,11 +146,11 @@ export async function POST(req: NextRequest) {
 
       ws.getCell(sharesPreRef).value = {
         formula: isFirst ? `Summary!$B$2/${closeRef}` : `${prevTotalSharesRef}*${splitRef}`,
-      } as any;
-      ws.getCell(reinvestRef).value = { formula: `IFERROR(${divRef}*${sharesPreRef}/${closeRef},0)` } as any;
-      ws.getCell(totalSharesRef).value = { formula: `${sharesPreRef}+${reinvestRef}` } as any;
-      ws.getCell(valueRef).value = { formula: `${totalSharesRef}*${closeRef}` } as any;
-      ws.getCell(returnRef).value = { formula: `${valueRef}/Summary!$B$2-1` } as any;
+      };
+      ws.getCell(reinvestRef).value = { formula: `IFERROR(${divRef}*${sharesPreRef}/${closeRef},0)` };
+      ws.getCell(totalSharesRef).value = { formula: `${sharesPreRef}+${reinvestRef}` };
+      ws.getCell(valueRef).value = { formula: `${totalSharesRef}*${closeRef}` };
+      ws.getCell(returnRef).value = { formula: `${valueRef}/Summary!$B$2-1` };
     }
 
     // Add metrics to summary sheet for this symbol
@@ -161,7 +162,7 @@ export async function POST(req: NextRequest) {
     const totalReturnFormula = `${finalValueFormula}/$B$2-1`;
     const daysFormula = `DATEVALUE(${endDateFormula})-DATEVALUE(${startDateFormula})`;
     const cagrFormula = `IF(${daysFormula}>0,POWER(${finalValueFormula}/$B$2,${daysFormula}/365)-1,0)`;
-    metricsRow.getCell(2).value = { formula: `${startDateFormula}&" | "&${endDateFormula}&" | "&TEXT(${finalValueFormula},"$#,##0.00")&" | "&TEXT(${totalReturnFormula},"0.00%")&" | "&TEXT(${cagrFormula},"0.00%")` } as any;
+    metricsRow.getCell(2).value = { formula: `${startDateFormula}&" | "&${endDateFormula}&" | "&TEXT(${finalValueFormula},"$#,##0.00")&" | "&TEXT(${totalReturnFormula},"0.00%")&" | "&TEXT(${cagrFormula},"0.00%")` };
   }
 
   // Build filename
