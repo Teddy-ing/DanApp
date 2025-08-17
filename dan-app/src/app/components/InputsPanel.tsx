@@ -8,7 +8,8 @@ import PriceChart from '@/app/components/PriceChart';
 
 type Horizon = '5y' | 'max';
 
-export default function InputsPanel() {
+export default function InputsPanel(props: { onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
+  const { onFetch } = props;
   const [symbols, setSymbols] = useState<string[]>([]);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -174,130 +175,21 @@ export default function InputsPanel() {
           </div>
         </div>
 
-        <FetchReturns
-          symbols={symbols}
-          base={base}
-          horizon={horizon}
-          requested={requested}
-          custom={custom}
-          onRequest={() => setRequested(true)}
-        />
+        <div className="mt-2">
+          <button
+            type="button"
+            onClick={() => { if (symbols.length > 0) onFetch({ symbols, base, horizon, custom }); }}
+            disabled={symbols.length === 0}
+            className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
+          >
+            Fetch returns
+          </button>
+          {symbols.length === 0 && (
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">Add at least one symbol to enable fetch.</div>
+          )}
+        </div>
       </div>
     </section>
   );
 }
-
-function FetchReturns(props: {
-  symbols: string[];
-  base: number;
-  horizon: Horizon;
-  requested: boolean;
-  custom: { enabled: boolean; start: string; end: string };
-  onRequest: () => void;
-}) {
-  const { symbols, base, horizon, requested, custom, onRequest } = props;
-  const queryKey = useMemo(() => ['returns', { symbols, base, horizon }], [symbols, base, horizon]);
-  const queryEnabled = requested && symbols.length > 0;
-
-  const query = useQuery({
-    queryKey,
-    enabled: queryEnabled,
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.set('symbols', symbols.join(','));
-      params.set('horizon', horizon);
-      params.set('base', String(base));
-      // Forward custom period if enabled
-      const nowSec = Math.floor(Date.now() / 1000);
-      if (typeof document !== 'undefined' && custom.enabled) {
-        const start = custom.start ? Math.floor(new Date(custom.start + 'T00:00:00Z').getTime() / 1000) : undefined;
-        const end = custom.end ? Math.floor(new Date(custom.end + 'T23:59:59Z').getTime() / 1000) : nowSec;
-        if (start) params.set('period1', String(start));
-        if (start) params.set('period2', String(end));
-      }
-      const res = await fetch(`/api/returns?${params.toString()}`, { headers: { 'accept-encoding': 'gzip' }, cache: 'no-store' });
-      const text = await res.text();
-      const data = JSON.parse(text);
-      if (!res.ok) {
-        throw new Error(data?.error?.message || 'Request failed');
-      }
-      return data as { meta: unknown; dates: string[]; series: Array<{ symbol: string; value: (number|null)[]; pct: (number|null)[] }>; };
-    },
-  });
-
-  // Trigger prices only after returns succeeds to avoid upstream 429 due to concurrent calls
-  const priceQuery = useQuery({
-    queryKey: ['prices', { symbols, range: horizon }],
-    enabled: query.isSuccess,
-    queryFn: async () => {
-      // Small delay to space upstream requests after returns
-      await new Promise((r) => setTimeout(r, 1200));
-      const params = new URLSearchParams();
-      params.set('symbols', symbols.join(','));
-      // Map horizon to a sensible range for price chart
-      params.set('range', horizon);
-      const nowSec = Math.floor(Date.now() / 1000);
-      if (typeof document !== 'undefined' && custom.enabled) {
-        const start = custom.start ? Math.floor(new Date(custom.start + 'T00:00:00Z').getTime() / 1000) : undefined;
-        const end = custom.end ? Math.floor(new Date(custom.end + 'T23:59:59Z').getTime() / 1000) : nowSec;
-        if (start) params.set('period1', String(start));
-        if (start) params.set('period2', String(end));
-      }
-      const res = await fetch(`/api/prices?${params.toString()}`, { cache: 'no-store' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error?.message || 'Prices request failed');
-      return data as { items: Array<{ symbol: string; range: string; candles: Array<{ date: string; open: number; high: number; low: number; close: number; volume: number }> }> };
-    },
-  });
-
-  const hasParams = symbols.length > 0;
-
-  return (
-    <div className="mt-2">
-      <button
-        type="button"
-        onClick={() => onRequest()}
-        disabled={!hasParams || query.isFetching}
-        className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
-      >
-        {query.isFetching ? 'Fetching…' : 'Fetch returns'}
-      </button>
-      <div className="mt-2 text-sm">
-        {!hasParams && <p className="text-gray-600 dark:text-gray-400">Add at least one symbol to enable fetch.</p>}
-        {query.error && <p className="text-red-600 dark:text-red-400">{(query.error as Error).message}</p>}
-        {query.isSuccess && (
-          <p className="text-gray-700 dark:text-gray-300">Loaded {query.data.dates.length} dates for {query.data.series.length} symbols.</p>
-        )}
-      </div>
-
-      {query.isSuccess && (
-        <div className="mt-4">
-          <ReturnsChart dates={query.data.dates} series={query.data.series} />
-        </div>
-      )}
-
-      {priceQuery.error && <p className="mt-2 text-sm text-red-600 dark:text-red-400">{(priceQuery.error as Error).message}</p>}
-      {(priceQuery.isSuccess || query.isSuccess) && (
-        <div className="mt-4">
-          <PriceChart
-            items={
-              (priceQuery.data?.items
-                ? (priceQuery.data.items as unknown as Array<{ symbol: string; candles: Array<{ dateUtcSeconds?: number; date?: number; close?: number | null }> }>).map((i) => ({
-                    symbol: i.symbol,
-                    candles: i.candles.map((c) => ({
-                      dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
-                      close: typeof c.close === 'number' ? c.close : null,
-                    })),
-                  }))
-                : query.data
-                ? query.data.series.map((s) => ({ symbol: s.symbol, candles: [] as Array<{ dateUtcSeconds: number; close: number | null }> }))
-                : []) as Array<{ symbol: string; candles: { dateUtcSeconds: number; close: number | null }[] }>
-            }
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
 

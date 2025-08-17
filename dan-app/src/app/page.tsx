@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import KeyModal from "@/app/components/KeyModal";
 import InputsPanel from "@/app/components/InputsPanel";
+import ReturnsView from "@/app/components/ReturnsView";
 
 export default async function Home() {
   const session = await auth();
@@ -31,21 +32,55 @@ export default async function Home() {
           <Link className="underline" href="/api/auth/signout">Sign out</Link>
         </div>
       </header>
-      <main id="main-content" className="row-start-2 w-full max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-6">
-          <div className="md:sticky md:top-6 self-start">
-            <InputsPanel />
-          </div>
-          <div className="flex flex-col gap-6">
-            {/* The charts render inside InputsPanel via query success; this container ensures layout */}
-          </div>
-        </div>
+      <main id="main-content" className="row-start-2 w-full">
+        {/* Client component orchestrates state: start centered, then sidebar + charts */}
+        <ReturnsShell />
       </main>
       <footer className="row-start-3 w-full text-center text-xs text-gray-600 dark:text-gray-400 py-4">
         <p>
           Data provided by Yahoo Finance via RapidAPI. For informational purposes only. Not investment advice.
         </p>
       </footer>
+    </div>
+  );
+}
+
+"use client";
+import { useState } from "react";
+
+function ReturnsShell() {
+  const [symbols, setSymbols] = useState<string[]>([]);
+  const [base, setBase] = useState<number>(1000);
+  const [horizon, setHorizon] = useState<"5y" | "max">("5y");
+  const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>({ enabled: false, start: "", end: "" });
+  const hasQuery = symbols.length > 0;
+
+  return (
+    <div className="w-full px-4">
+      {!hasQuery ? (
+        <div className="max-w-md mx-auto">
+          <InputsPanel onFetch={({ symbols, base, horizon, custom }) => {
+            setSymbols(symbols);
+            setBase(base);
+            setHorizon(horizon);
+            setCustom(custom);
+          }} />
+        </div>
+      ) : (
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8">
+          <div className="md:sticky md:top-6 self-start">
+            <InputsPanel onFetch={({ symbols, base, horizon, custom }) => {
+              setSymbols(symbols);
+              setBase(base);
+              setHorizon(horizon);
+              setCustom(custom);
+            }} />
+          </div>
+          <div>
+            <ReturnsView symbols={symbols} base={base} horizon={horizon} custom={custom} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
