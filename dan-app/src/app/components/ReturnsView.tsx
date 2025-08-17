@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ReturnsChart from "@/app/components/ReturnsChart";
 import PriceChart from "@/app/components/PriceChart";
+import ForwardReturnsChart from "@/app/components/ForwardReturnsChart";
 
 export type Horizon = "5y" | "max";
 export type CustomRange = { enabled: boolean; start: string; end: string };
@@ -84,6 +85,12 @@ export default function ReturnsView(props: {
         <div className="mb-6">
           <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
           <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
+        </div>
+      )}
+      {returnsQuery.isSuccess && (
+        <div className="mb-6">
+          <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
+          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
         </div>
       )}
       {pricesQuery.isSuccess && (

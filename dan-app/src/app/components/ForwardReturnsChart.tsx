@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -15,7 +15,7 @@ import type { NameType, ValueType } from 'recharts/types/component/DefaultToolti
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ReturnsChart(props: { dates: string[]; series: Series[] }) {
+export default function ForwardReturnsChart(props: { dates: string[]; series: Series[] }) {
   const [mode, setMode] = useState<'$' | '%'>('$');
 
   const palette = [
@@ -28,12 +28,24 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
 
   const data = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
+    const lastIndex = props.dates.length - 1;
+    if (lastIndex < 0) return rows;
+
+    // Build rows where each row reflects return from that start date to the final date
     for (let i = 0; i < props.dates.length; i += 1) {
       const row: Record<string, number | string | null> = { date: props.dates[i] };
       for (const s of props.series) {
-        const val = s.value[i] ?? null;
-        const pct = s.pct[i] ?? null;
-        row[s.symbol] = mode === '$' ? val : (pct == null ? null : pct * 100);
+        const startVal = s.value[i];
+        const endVal = s.value[lastIndex];
+        if (startVal == null || endVal == null || startVal === 0) {
+          row[s.symbol] = null;
+          continue;
+        }
+        if (mode === '$') {
+          row[s.symbol] = endVal - startVal;
+        } else {
+          row[s.symbol] = ((endVal / startVal) - 1) * 100;
+        }
       }
       rows.push(row);
     }
@@ -42,7 +54,8 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-sm text-gray-700 dark:text-gray-300">Toggle</div>
         <div className="inline-flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
           <button
             type="button"
@@ -67,7 +80,7 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
             <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={32} />
             <YAxis
               tick={{ fontSize: 12 }}
-              domain={['auto', 'auto']}
+              domain={["auto", "auto"]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
             <Tooltip
