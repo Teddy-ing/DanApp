@@ -18,6 +18,9 @@ export default function ReturnsView(props: {
   const queryKey = useMemo(() => ['returns', { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
   const enabled = symbols.length > 0;
 
+  const amountDisplay = useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(base), [base]);
+  const symbolsDisplay = useMemo(() => symbols.join(', '), [symbols]);
+
   const returnsQuery = useQuery({
     queryKey,
     enabled,
@@ -78,11 +81,13 @@ export default function ReturnsView(props: {
       </div>
       {returnsQuery.isSuccess && (
         <div className="mb-6">
+          <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
           <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
         </div>
       )}
       {pricesQuery.isSuccess && (
         <div>
+          <div className="text-sm mb-2">Price of {symbolsDisplay}</div>
           <PriceChart
             items={pricesQuery.data.items.map((i) => ({
               symbol: i.symbol,

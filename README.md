@@ -27,6 +27,13 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Caching: Uses Upstash Redis via `src/lib/redis.ts` with TTLs per PRD (`yf:{symbol}:prices:v1`, `yf:{symbol}:divs:v1`, 24h).
   - IR Fallback: `src/scrapers/ir.ts` scrapes common issuer IR dividend pages (5s timeout, 1 retry strategy implicit via multi-path attempts), cached 7 days under `ir:{symbol}:divs:v1`.
   - Validation: `src/lib/ticker.ts` validates US tickers (supports class suffix like `BRK-B`) and normalizes to uppercase.
+  
+### UI
+
+- Returns/Price charts now include labels:
+  - Returns chart: "Returns from {amount} in {symbols} at {starting point}" where amount is USD-formatted, symbols are comma-joined, and starting point is the first date of the series.
+  - Price chart: "Price of {symbols}" using the same symbol display.
+  - Implemented in `src/app/components/ReturnsView.tsx`.
 
 ### RapidAPI host
 
