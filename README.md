@@ -38,10 +38,10 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 ### Excel export (XLSX)
 
 - Server-side export (ExcelJS) with an "Export to Excel" button in the header.
-- One sheet per symbol: Date, Close, Dividend/Share, Split Ratio, Shares (pre), Reinvested Shares, Total Shares, Value, Return %.
-- Full DRIP implemented as Excel formulas: splits applied first, then dividends reinvested at that day’s close; no costs.
+- One sheet per symbol (all dates in New York time): Date, Open, Close, Dividend/Share, Split Ratio, Shares (pre), Reinvested Shares, Total Shares, Value, Return %.
+- DRIP implemented as live Excel formulas: splits applied first; dividend cash accrues at pay date and is reinvested at the next trading-day open; valuation uses close. No fees/costs modeled.
 - Summary sheet includes parameters and per-symbol Start/End, Final Value, Total Return, and CAGR.
-- File name pattern: `returns_{SYMBOLS}_{RANGE}_{YYYYMMDD}.xlsx`. Target: desktop Excel.
+- File name pattern: `{SYMBOL1, SYMBOL2, ...} {YYYY-MM-DD} returns.xlsx` (client honors server-provided Content-Disposition name).
 
 ### RapidAPI host
 

@@ -29,7 +29,11 @@ export default function ExportButton() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'returns.xlsx';
+      // Try to honor server-provided filename from Content-Disposition
+      const cd = res.headers.get('Content-Disposition') || '';
+      const m = /filename\s*=\s*"?([^";]+)"?/i.exec(cd);
+      const suggested = m ? m[1] : undefined;
+      a.download = suggested || 'returns.xlsx';
       document.body.appendChild(a);
       a.click();
       a.remove();

@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
 import { fetchDailyCandles, fetchSplitsAndDividends, DailyCandle, DividendEvent, SplitEvent } from "@/providers/yahoo";
+import { toNyDateString, nyTodayDateString } from "@/lib/calendar";
 
 type Horizon = "5y" | "max" | "1y";
 type SpanArg = { period1: number; period2?: number } | Horizon;
@@ -76,6 +77,7 @@ export async function POST(req: NextRequest) {
     const ws = wb.addWorksheet(sheetName);
     ws.columns = [
       { header: "Date", key: "date", width: 12 },
+      { header: "Open", key: "open", width: 12 },
       { header: "Close", key: "close", width: 12 },
       { header: "Dividend/Share", key: "divps", width: 16 },
       { header: "Split Ratio", key: "split", width: 12 },
@@ -87,21 +89,25 @@ export async function POST(req: NextRequest) {
     ];
 
     // Build row data aligned by trading dates
+    const dateToOpen = new Map<string, number>();
     const dateToClose = new Map<string, number>();
     for (const c of s.candles) {
       if (typeof c.close === "number") {
-        const d = new Date((c.dateUtcSeconds ?? 0) * 1000).toISOString().slice(0, 10);
+        const d = toNyDateString(c.dateUtcSeconds ?? 0);
+        if (typeof c.open === "number") {
+          dateToOpen.set(d, c.open);
+        }
         dateToClose.set(d, c.close);
       }
     }
     const dateToDiv = new Map<string, number>();
     for (const d of s.dividends) {
-      const key = new Date((d.dateUtcSeconds ?? 0) * 1000).toISOString().slice(0, 10);
+      const key = toNyDateString(d.dateUtcSeconds ?? 0);
       dateToDiv.set(key, (dateToDiv.get(key) ?? 0) + (d.amount ?? 0));
     }
     const dateToSplit = new Map<string, number>();
     for (const sp of s.splits) {
-      const key = new Date((sp.dateUtcSeconds ?? 0) * 1000).toISOString().slice(0, 10);
+      const key = toNyDateString(sp.dateUtcSeconds ?? 0);
       dateToSplit.set(key, (dateToSplit.get(key) ?? 1) * (sp.ratio || 1));
     }
 
@@ -111,21 +117,23 @@ export async function POST(req: NextRequest) {
     // Add rows and formulas
     for (let idx = 0; idx < dates.length; idx += 1) {
       const date = dates[idx]!;
+      const open = dateToOpen.get(date) ?? null;
       const close = dateToClose.get(date) ?? null;
       const div = dateToDiv.get(date) ?? 0;
       const split = dateToSplit.get(date) ?? 1;
-      ws.addRow({ date, close, divps: div, split });
+      ws.addRow({ date, open, close, divps: div, split });
     }
 
     // Apply number formats
-    ws.getColumn(2).numFmt = "$#,##0.00"; // Close
-    ws.getColumn(3).numFmt = "$#,##0.0000"; // Dividend/share
-    ws.getColumn(4).numFmt = "0.00"; // Split ratio
-    ws.getColumn(5).numFmt = "0.0000"; // Shares pre
-    ws.getColumn(6).numFmt = "0.0000"; // Reinvested shares
-    ws.getColumn(7).numFmt = "0.0000"; // Total shares
-    ws.getColumn(8).numFmt = "$#,##0.00"; // Value
-    ws.getColumn(9).numFmt = "0.00%"; // Return %
+    ws.getColumn(2).numFmt = "$#,##0.00"; // Open
+    ws.getColumn(3).numFmt = "$#,##0.00"; // Close
+    ws.getColumn(4).numFmt = "$#,##0.0000"; // Dividend/share
+    ws.getColumn(5).numFmt = "0.00"; // Split ratio
+    ws.getColumn(6).numFmt = "0.0000"; // Shares pre
+    ws.getColumn(7).numFmt = "0.0000"; // Reinvested shares
+    ws.getColumn(8).numFmt = "0.0000"; // Total shares
+    ws.getColumn(9).numFmt = "$#,##0.00"; // Value
+    ws.getColumn(10).numFmt = "0.00%"; // Return %
 
     const baseCell = summary.getCell("B2");
     baseCell.value = base;
@@ -134,20 +142,23 @@ export async function POST(req: NextRequest) {
     const lastRow = ws.rowCount;
     for (let r = firstDataRow; r <= lastRow; r += 1) {
       const isFirst = r === firstDataRow;
-      const prevTotalSharesRef = `G${r - 1}`;
-      const splitRef = `D${r}`;
-      const closeRef = `B${r}`;
-      const divRef = `C${r}`;
-      const sharesPreRef = `E${r}`;
-      const reinvestRef = `F${r}`;
-      const totalSharesRef = `G${r}`;
-      const valueRef = `H${r}`;
-      const returnRef = `I${r}`;
+      const prevTotalSharesRef = `H${r - 1}`;
+      const splitRef = `E${r}`;
+      const openRef = `B${r}`;
+      const closeRef = `C${r}`;
+      const prevDivRef = `D${r - 1}`;
+      const divRef = `D${r}`;
+      const sharesPreRef = `F${r}`;
+      const reinvestRef = `G${r}`;
+      const totalSharesRef = `H${r}`;
+      const valueRef = `I${r}`;
+      const returnRef = `J${r}`;
 
       ws.getCell(sharesPreRef).value = {
         formula: isFirst ? `Summary!$B$2/${closeRef}` : `${prevTotalSharesRef}*${splitRef}`,
       };
-      ws.getCell(reinvestRef).value = { formula: `IFERROR(${divRef}*${sharesPreRef}/${closeRef},0)` };
+      // Reinvest using previous row's dividend cash at today's open
+      ws.getCell(reinvestRef).value = { formula: `IF(${r}=${firstDataRow},0,IFERROR(${prevDivRef}*${prevTotalSharesRef}/${openRef},0))` };
       ws.getCell(totalSharesRef).value = { formula: `${sharesPreRef}+${reinvestRef}` };
       ws.getCell(valueRef).value = { formula: `${totalSharesRef}*${closeRef}` };
       ws.getCell(returnRef).value = { formula: `${valueRef}/Summary!$B$2-1` };
@@ -158,7 +169,7 @@ export async function POST(req: NextRequest) {
     metricsRow.getCell(1).value = s.symbol;
     const startDateFormula = `INDEX('${sheetName}'!A:A,2)`;
     const endDateFormula = `INDEX('${sheetName}'!A:A,COUNTA('${sheetName}'!A:A))`;
-    const finalValueFormula = `INDEX('${sheetName}'!H:H,COUNTA('${sheetName}'!A:A))`;
+    const finalValueFormula = `INDEX('${sheetName}'!I:I,COUNTA('${sheetName}'!A:A))`;
     const totalReturnFormula = `${finalValueFormula}/$B$2-1`;
     const daysFormula = `DATEVALUE(${endDateFormula})-DATEVALUE(${startDateFormula})`;
     const cagrFormula = `IF(${daysFormula}>0,POWER(${finalValueFormula}/$B$2,${daysFormula}/365)-1,0)`;
@@ -166,9 +177,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Build filename
-  const today = new Date();
-  const yyyymmdd = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
-  const filename = `returns_${symbols.join('-')}_${custom.enabled ? `${custom.start}-${custom.end}` : horizon}_${yyyymmdd}.xlsx`;
+  const nyToday = nyTodayDateString();
+  const filename = `${symbols.join(', ')} ${nyToday} returns.xlsx`;
 
   const buffer = await wb.xlsx.writeBuffer();
   return new NextResponse(buffer, {
