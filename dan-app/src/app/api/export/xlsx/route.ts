@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
         const endVal = `INDEX('${sheetName}'!I:I, COUNTA('${sheetName}'!A:A))`;
         const dollarCell = forward.getCell(rowIndex, 2 + si * 2);
         const pctCell = forward.getCell(rowIndex, 3 + si * 2);
-        dollarCell.value = { formula: `${endVal}-(${startVal})` };
+        dollarCell.value = { formula: `Summary!$B$2*IFERROR(${endVal}/(${startVal})-1, NA())` };
         pctCell.value = { formula: `IFERROR(${endVal}/(${startVal})-1, NA())` };
       }
     }
