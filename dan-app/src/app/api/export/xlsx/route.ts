@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
   summary.views = [{ state: 'frozen', ySplit: 1 }];
 
   // Per-symbol sheets and metric rows
+  const unionCalendar = new Set<string>();
   for (const s of perSymbol) {
     const sheetName = s.symbol.substring(0, 31);
     const ws = wb.addWorksheet(sheetName);
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
     for (const c of s.candles) {
       if (typeof c.close === "number") {
         const d = toNyDateString(c.dateUtcSeconds ?? 0);
+        unionCalendar.add(d);
         if (typeof c.open === "number") {
           dateToOpen.set(d, c.open);
         }
@@ -147,7 +149,6 @@ export async function POST(req: NextRequest) {
       const openRef = `B${r}`;
       const closeRef = `C${r}`;
       const prevDivRef = `D${r - 1}`;
-      const divRef = `D${r}`;
       const sharesPreRef = `F${r}`;
       const reinvestRef = `G${r}`;
       const totalSharesRef = `H${r}`;
@@ -174,6 +175,54 @@ export async function POST(req: NextRequest) {
     const daysFormula = `DATEVALUE(${endDateFormula})-DATEVALUE(${startDateFormula})`;
     const cagrFormula = `IF(${daysFormula}>0,POWER(${finalValueFormula}/$B$2,${daysFormula}/365)-1,0)`;
     metricsRow.getCell(2).value = { formula: `${startDateFormula}&" | "&${endDateFormula}&" | "&TEXT(${finalValueFormula},"$#,##0.00")&" | "&TEXT(${totalReturnFormula},"0.00%")&" | "&TEXT(${cagrFormula},"0.00%")` };
+  }
+
+  // Forward returns sheet: union calendar with $ and % to present per symbol
+  const forwardDates = Array.from(unionCalendar);
+  forwardDates.sort((a, b) => a.localeCompare(b));
+  if (forwardDates.length > 0) {
+    const forward = wb.addWorksheet("Forward");
+    const forwardColumns: Array<{ header: string; width?: number }> = [{ header: "Date", width: 12 }];
+    for (const s of perSymbol) {
+      forwardColumns.push({ header: `${s.symbol} $`, width: 14 });
+      forwardColumns.push({ header: `${s.symbol} %`, width: 12 });
+    }
+    // Write header row and set widths explicitly to avoid `any` typing
+    forward.addRow(forwardColumns.map((c) => c.header));
+    for (let i = 0; i < forwardColumns.length; i += 1) {
+      const w = forwardColumns[i]?.width;
+      if (typeof w === 'number') {
+        forward.getColumn(i + 1).width = w;
+      }
+    }
+
+    // number formats
+    for (let idx = 0; idx < perSymbol.length; idx += 1) {
+      const baseCol = 2 + idx * 2;
+      forward.getColumn(baseCol).numFmt = "$#,##0.00"; // $
+      forward.getColumn(baseCol + 1).numFmt = "0.00%"; // %
+    }
+
+    // Rows
+    for (let r = 0; r < forwardDates.length; r += 1) {
+      const rowIndex = r + 2;
+      const date = forwardDates[r]!;
+      forward.addRow([date]);
+      // Fill formulas per symbol
+      for (let si = 0; si < perSymbol.length; si += 1) {
+        const s = perSymbol[si]!;
+        const sheetName = s.symbol.substring(0, 31);
+        const startVal = `IFERROR(INDEX('${sheetName}'!I:I, MATCH($A${rowIndex}, '${sheetName}'!A:A, 0)), NA())`;
+        const endVal = `INDEX('${sheetName}'!I:I, COUNTA('${sheetName}'!A:A))`;
+        const dollarCell = forward.getCell(rowIndex, 2 + si * 2);
+        const pctCell = forward.getCell(rowIndex, 3 + si * 2);
+        dollarCell.value = { formula: `Summary!$B$2*IFERROR(${endVal}/(${startVal})-1, NA())` };
+        pctCell.value = { formula: `IFERROR(${endVal}/(${startVal})-1, NA())` };
+      }
+    }
+
+    // Freeze header
+    forward.views = [{ state: 'frozen', ySplit: 1 }];
   }
 
   // Build filename

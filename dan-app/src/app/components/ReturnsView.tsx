@@ -90,7 +90,7 @@ export default function ReturnsView(props: {
       {returnsQuery.isSuccess && (
         <div className="mb-6">
           <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
-          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
+          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
         </div>
       )}
       {pricesQuery.isSuccess && (

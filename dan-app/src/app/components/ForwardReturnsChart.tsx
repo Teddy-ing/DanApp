@@ -15,7 +15,7 @@ import type { NameType, ValueType } from 'recharts/types/component/DefaultToolti
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ForwardReturnsChart(props: { dates: string[]; series: Series[] }) {
+export default function ForwardReturnsChart(props: { dates: string[]; series: Series[]; base?: number }) {
   const [mode, setMode] = useState<'$' | '%'>('$');
 
   const palette = [
@@ -42,7 +42,8 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
           continue;
         }
         if (mode === '$') {
-          row[s.symbol] = endVal - startVal;
+          const base = typeof props.base === 'number' && isFinite(props.base) ? props.base : 1000;
+          row[s.symbol] = base * (endVal / startVal - 1);
         } else {
           row[s.symbol] = ((endVal / startVal) - 1) * 100;
         }
@@ -50,7 +51,7 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
       rows.push(row);
     }
     return rows;
-  }, [props.dates, props.series, mode]);
+  }, [props.dates, props.series, mode, props.base]);
 
   return (
     <div className="w-full">
