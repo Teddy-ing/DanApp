@@ -149,7 +149,6 @@ export async function POST(req: NextRequest) {
       const openRef = `B${r}`;
       const closeRef = `C${r}`;
       const prevDivRef = `D${r - 1}`;
-      const divRef = `D${r}`;
       const sharesPreRef = `F${r}`;
       const reinvestRef = `G${r}`;
       const totalSharesRef = `H${r}`;
@@ -183,12 +182,19 @@ export async function POST(req: NextRequest) {
   forwardDates.sort((a, b) => a.localeCompare(b));
   if (forwardDates.length > 0) {
     const forward = wb.addWorksheet("Forward");
-    const forwardColumns: Array<{ header: string; key: string; width?: number }> = [{ header: "Date", key: "date", width: 12 }];
+    const forwardColumns: Array<{ header: string; width?: number }> = [{ header: "Date", width: 12 }];
     for (const s of perSymbol) {
-      forwardColumns.push({ header: `${s.symbol} $`, key: `${s.symbol}_$`, width: 14 });
-      forwardColumns.push({ header: `${s.symbol} %`, key: `${s.symbol}_pct`, width: 12 });
+      forwardColumns.push({ header: `${s.symbol} $`, width: 14 });
+      forwardColumns.push({ header: `${s.symbol} %`, width: 12 });
     }
-    forward.columns = forwardColumns as any;
+    // Write header row and set widths explicitly to avoid `any` typing
+    forward.addRow(forwardColumns.map((c) => c.header));
+    for (let i = 0; i < forwardColumns.length; i += 1) {
+      const w = forwardColumns[i]?.width;
+      if (typeof w === 'number') {
+        forward.getColumn(i + 1).width = w;
+      }
+    }
 
     // number formats
     for (let idx = 0; idx < perSymbol.length; idx += 1) {
@@ -201,7 +207,7 @@ export async function POST(req: NextRequest) {
     for (let r = 0; r < forwardDates.length; r += 1) {
       const rowIndex = r + 2;
       const date = forwardDates[r]!;
-      const row = forward.addRow({ date });
+      forward.addRow([date]);
       // Fill formulas per symbol
       for (let si = 0; si < perSymbol.length; si += 1) {
         const s = perSymbol[si]!;
