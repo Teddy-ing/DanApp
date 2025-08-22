@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   const summary = wb.addWorksheet("Summary");
   summary.columns = [
     { header: "Field", key: "field", width: 22 },
-    { header: "Value", key: "value", width: 50 },
+    { header: "Value", key: "value", width: 70 },
   ];
   summary.addRow({ field: "Symbols", value: symbols.join(", ") });
   summary.addRow({ field: "Base (USD)", value: base });
@@ -173,8 +173,24 @@ export async function POST(req: NextRequest) {
     const finalValueFormula = `INDEX('${sheetName}'!I:I,COUNTA('${sheetName}'!A:A))`;
     const totalReturnFormula = `${finalValueFormula}/$B$2-1`;
     const daysFormula = `DATEVALUE(${endDateFormula})-DATEVALUE(${startDateFormula})`;
-    const cagrFormula = `IF(${daysFormula}>0,POWER(${finalValueFormula}/$B$2,${daysFormula}/365)-1,0)`;
+    const cagrFormula = `IF(${daysFormula}>0,IF(${finalValueFormula}>0,POWER(${finalValueFormula}/$B$2,${daysFormula}/365)-1,0),0)`;
     metricsRow.getCell(2).value = { formula: `${startDateFormula}&" | "&${endDateFormula}&" | "&TEXT(${finalValueFormula},"$#,##0.00")&" | "&TEXT(${totalReturnFormula},"0.00%")&" | "&TEXT(${cagrFormula},"0.00%")` };
+  }
+
+  // Descriptions block
+  summary.addRow([]);
+  const descHeader = summary.addRow([]);
+  descHeader.getCell(1).value = "Notes";
+  const notes = [
+    "Symbol row format: Start Date | End Date | Final Value | Total Return | CAGR (annualized).",
+    "Dates are America/New_York (EST/EDT). Final Value and returns include dividend reinvestment (DRIP) and stock splits.",
+    "Forward tab: For each trading date, shows hypothetical return to present for each symbol — $ column is Base × (Final/Start − 1); % column is (Final/Start − 1).",
+  ];
+  for (const n of notes) {
+    const r = summary.addRow([]);
+    const c = r.getCell(2);
+    c.value = n;
+    c.alignment = { wrapText: true };
   }
 
   // Forward returns sheet: union calendar with $ and % to present per symbol
