@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
     const finalValueFormula = `INDEX('${sheetName}'!I:I,COUNTA('${sheetName}'!A:A))`;
     const totalReturnFormula = `${finalValueFormula}/$B$2-1`;
     const daysFormula = `DATEVALUE(${endDateFormula})-DATEVALUE(${startDateFormula})`;
-    const cagrFormula = `IF(${daysFormula}>0,IF(${finalValueFormula}>0,POWER(${finalValueFormula}/$B$2,${daysFormula}/365)-1,0),0)`;
+    const cagrFormula = `IF(${daysFormula}>0,IF(${finalValueFormula}>0,POWER(${finalValueFormula}/$B$2,(${daysFormula})/365)-1,0),0)`;
     metricsRow.getCell(2).value = { formula: `${startDateFormula}&" | "&${endDateFormula}&" | "&TEXT(${finalValueFormula},"$#,##0.00")&" | "&TEXT(${totalReturnFormula},"0.00%")&" | "&TEXT(${cagrFormula},"0.00%")` };
   }
 
