@@ -1,4 +1,5 @@
 import { createRedisClient } from "./redis";
+import { isIP } from "node:net";
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -46,8 +47,11 @@ export function extractUserId(headers: Headers): string {
   const explicit = headers.get("x-user-id");
   if (explicit && explicit.trim().length > 0) return explicit.trim();
   const xff = headers.get("x-forwarded-for");
-  const ip = xff?.split(",")[0]?.trim();
-  return ip && ip.length > 0 ? ip : "anon";
+  if (xff) {
+    const ip = xff.split(",")[0].trim();
+    if (isIP(ip)) return ip;
+  }
+  return "anon";
 }
 
 

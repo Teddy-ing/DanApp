@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSplitsAndDividends } from "@/providers/yahoo";
-import { toNyDateString, nyTodayDateString } from "@/lib/calendar";
-import { scrapeIssuerDividends } from "@/scrapers/ir";
-import { validateUsTickerFormat, parseSymbols } from "@/lib/ticker";
+import { toNyDateString } from "@/lib/calendar";
+import { parseSymbols } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
@@ -16,51 +15,11 @@ function parseRange(input: string | null): Range {
 }
 
 
-function parseIrBases(params: URLSearchParams, symbols: string[]): Record<string, string[]> {
-  const out: Record<string, string[]> = {};
-  const symbolSet = new Set(symbols);
-  for (const [key, value] of params) {
-    const m = key.match(/^ir\[([A-Z0-9-]{1,7})\]$/i);
-    if (!m) continue;
-    const raw = m[1];
-    let sym: string;
-    try {
-      sym = validateUsTickerFormat(raw);
-    } catch {
-      continue;
-    }
-    if (!symbolSet.has(sym)) continue;
-    if (!out[sym]) out[sym] = [];
-    if (value && !out[sym].includes(value)) out[sym].push(value);
-  }
-  return out;
-}
-
 function jsonError(status: number, message: string, details?: unknown) {
   return NextResponse.json(
     { error: { message, details } },
     { status }
   );
-}
-
-function isoToDate(iso: string): Date {
-  return new Date(`${iso}T00:00:00Z`);
-}
-
-function daysBetweenIso(a: string, b: string): number {
-  const ms = Math.abs(isoToDate(b).getTime() - isoToDate(a).getTime());
-  return Math.floor(ms / (1000 * 60 * 60 * 24));
-}
-
-function computeGapNeeded(dividendDatesIso: string[]): boolean {
-  const todayNy = nyTodayDateString();
-  const startIso = `${String(Number(todayNy.slice(0, 4)) - 2)}${todayNy.slice(4)}`;
-  const recent = dividendDatesIso.filter((d) => d >= startIso).sort();
-  if (recent.length <= 1) return true;
-  for (let i = 1; i < recent.length; i += 1) {
-    if (daysBetweenIso(recent[i - 1], recent[i]) > 180) return true;
-  }
-  return false;
 }
 
 export async function GET(req: NextRequest) {
@@ -82,30 +41,12 @@ export async function GET(req: NextRequest) {
   if (symbols.length > 5) {
     return jsonError(400, "A maximum of 5 symbols is supported");
   }
-  const irBases = parseIrBases(url.searchParams, symbols);
 
   try {
     const items = await Promise.all(
       symbols.map(async (symbol) => {
         const { dividends } = await fetchSplitsAndDividends(symbol, range, { rapidApiKey });
-        const yahooDivs = dividends.map((d) => ({ dateIso: toNyDateString(d.dateUtcSeconds), amount: d.amount }));
-        const yahooDates = yahooDivs.map((d) => d.dateIso);
-        const merged = [...yahooDivs];
-
-        const needGapFill = computeGapNeeded(yahooDates);
-        const bases = irBases[symbol] || [];
-        if (needGapFill && bases.length > 0) {
-          const ir = await scrapeIssuerDividends(symbol, bases);
-          if (ir && ir.dividends.length > 0) {
-            const existing = new Set(merged.map((d) => d.dateIso));
-            for (const d of ir.dividends) {
-              if (!existing.has(d.dateIso)) {
-                merged.push({ dateIso: d.dateIso, amount: d.amount });
-              }
-            }
-          }
-        }
-
+        const merged = dividends.map((d) => ({ dateIso: toNyDateString(d.dateUtcSeconds), amount: d.amount }));
         merged.sort((a, b) => a.dateIso.localeCompare(b.dateIso));
         return { symbol, range, dividends: merged };
       })

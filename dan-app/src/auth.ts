@@ -7,7 +7,7 @@ const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret,
-  trustHost: true,
+  trustHost: false,
   session: { strategy: "jwt" },
   callbacks: {
     async session({ session, token }) {
