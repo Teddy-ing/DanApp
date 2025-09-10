@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
-import { validateUsTickerFormat } from "@/lib/ticker";
+import { parseSymbols } from "@/lib/ticker";
 import { computeDripSeries } from "@/lib/drip";
 import { gzipSync } from "zlib";
 import { toApiError } from "@/lib/errors";
@@ -20,19 +20,6 @@ function parseBase(input: string | null): number {
   return 1000;
 }
 
-function parseSymbols(param: string | null): string[] {
-  if (!param) return [];
-  const parts = param
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  const normalized: string[] = [];
-  for (const raw of parts) {
-    const valid = validateUsTickerFormat(raw);
-    if (!normalized.includes(valid)) normalized.push(valid);
-  }
-  return normalized;
-}
 
 function jsonError(status: number, message: string, details?: unknown) {
   return NextResponse.json(
@@ -77,22 +64,13 @@ export async function GET(req: NextRequest) {
   const customSpan = period1 ? { period1: Number(period1), period2: period2 ? Number(period2) : undefined } : undefined;
 
   try {
-    // Process symbols sequentially with staggering to reduce upstream 429s
-    const seriesInputs = [] as Array<{
-      symbol: string;
-      candles: Awaited<ReturnType<typeof fetchDailyCandles>>;
-      splits: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["splits"];
-      dividends: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["dividends"];
-    }>;
-    for (let idx = 0; idx < symbols.length; idx += 1) {
-      const symbol = symbols[idx]!;
-      const candles = await fetchDailyCandles(symbol, customSpan ?? horizon, { rapidApiKey });
-      await new Promise((r) => setTimeout(r, 500));
-      const events = await fetchSplitsAndDividends(symbol, customSpan ?? horizon, { rapidApiKey });
-      seriesInputs.push({ symbol, candles, splits: events.splits, dividends: events.dividends });
-      // Stagger next symbol
-      if (idx < symbols.length - 1) await new Promise((r) => setTimeout(r, 800));
-    }
+    const seriesInputs = await Promise.all(
+      symbols.map(async (symbol) => {
+        const candles = await fetchDailyCandles(symbol, customSpan ?? horizon, { rapidApiKey });
+        const events = await fetchSplitsAndDividends(symbol, customSpan ?? horizon, { rapidApiKey });
+        return { symbol, candles, splits: events.splits, dividends: events.dividends };
+      })
+    );
 
     const drip = computeDripSeries(seriesInputs, { base, horizon });
 

@@ -8,44 +8,27 @@ import { toNyDateString, nyTodayDateString } from "@/lib/calendar";
 type Horizon = "5y" | "max" | "1y";
 type SpanArg = { period1: number; period2?: number } | Horizon;
 
-export async function POST(req: NextRequest) {
-  // Auth and RapidAPI key
-  const session = await auth();
-  const userId = (session?.user as { id?: string } | undefined)?.id;
-  if (!userId) return jsonError(401, "Unauthorized");
-  const rapidApiKey = await getDecryptedRapidApiKey(userId);
-  if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
+async function fetchSymbolData(
+  symbols: string[],
+  span: SpanArg,
+  rapidApiKey: string
+) {
+  return Promise.all(
+    symbols.map(async (symbol) => {
+      const candles = await fetchDailyCandles(symbol, span, { rapidApiKey });
+      const events = await fetchSplitsAndDividends(symbol, span, { rapidApiKey });
+      return { symbol, candles, dividends: events.dividends, splits: events.splits };
+    })
+  );
+}
 
-  const body = await req.json().catch(() => null) as null | {
-    symbols?: string[];
-    base?: number;
-    horizon?: Horizon;
-    custom?: { enabled: boolean; start: string; end: string };
-  };
-  if (!body || !Array.isArray(body.symbols) || body.symbols.length === 0) {
-    return jsonError(400, "symbols is required");
-  }
-  const symbols = body.symbols.slice(0, 5);
-  const base = typeof body.base === "number" && isFinite(body.base) ? body.base : 1000;
-  const horizon: Horizon = body.horizon === "max" ? "max" : "5y";
-  const custom = body.custom && body.custom.enabled ? body.custom : { enabled: false, start: "", end: "" };
-
-  const span: SpanArg = custom.enabled
-    ? { period1: Math.floor(new Date(custom.start + "T00:00:00Z").getTime() / 1000) || Math.floor(Date.now() / 1000) - 86400 * 365 * 5,
-        period2: Math.floor(new Date(custom.end + "T23:59:59Z").getTime() / 1000) || Math.floor(Date.now() / 1000) }
-    : horizon;
-
-  // Fetch per symbol
-  const perSymbol: Array<{ symbol: string; candles: DailyCandle[]; dividends: DividendEvent[]; splits: SplitEvent[] }> = [];
-  for (let i = 0; i < symbols.length; i += 1) {
-    const symbol = symbols[i]!;
-    const candles = await fetchDailyCandles(symbol, span, { rapidApiKey });
-    const events = await fetchSplitsAndDividends(symbol, span, { rapidApiKey });
-    perSymbol.push({ symbol, candles, dividends: events.dividends, splits: events.splits });
-    if (i < symbols.length - 1) await new Promise((r) => setTimeout(r, 600));
-  }
-
-  // Build workbook
+async function buildWorkbook(
+  perSymbol: Array<{ symbol: string; candles: DailyCandle[]; dividends: DividendEvent[]; splits: SplitEvent[] }>,
+  symbols: string[],
+  base: number,
+  horizon: Horizon,
+  custom: { enabled: boolean; start: string; end: string }
+) {
   const wb = new ExcelJS.Workbook();
   wb.creator = "DanApp";
   wb.created = new Date();
@@ -184,7 +167,7 @@ export async function POST(req: NextRequest) {
   const notes = [
     "Symbol row format: Start Date | End Date | Final Value | Total Return | CAGR (annualized).",
     "Dates are America/New_York (EST/EDT). Final Value and returns include dividend reinvestment (DRIP) and stock splits.",
-    "Forward tab: For each trading date, shows hypothetical return to present for each symbol — $ column is Base × (Final/Start − 1); % column is (Final/Start − 1).",
+    "Forward tab: For each trading date, shows hypothetical return to present for each symbol — $ column is Base × (Final/Start− 1); % column is (Final/Start − 1).",
   ];
   for (const n of notes) {
     const r = summary.addRow([]);
@@ -241,11 +224,45 @@ export async function POST(req: NextRequest) {
     forward.views = [{ state: 'frozen', ySplit: 1 }];
   }
 
-  // Build filename
   const nyToday = nyTodayDateString();
   const filename = `${symbols.join(', ')} ${nyToday} returns.xlsx`;
-
   const buffer = await wb.xlsx.writeBuffer();
+  return { buffer, filename };
+}
+export async function POST(req: NextRequest) {
+  // Auth and RapidAPI key
+  const session = await auth();
+  const userId = (session?.user as { id?: string } | undefined)?.id;
+  if (!userId) return jsonError(401, "Unauthorized");
+  const rapidApiKey = await getDecryptedRapidApiKey(userId);
+  if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
+
+  const body = (await req.json().catch(() => null)) as null | {
+    symbols?: string[];
+    base?: number;
+    horizon?: Horizon;
+    custom?: { enabled: boolean; start: string; end: string };
+  };
+  if (!body || !Array.isArray(body.symbols) || body.symbols.length === 0) {
+    return jsonError(400, "symbols is required");
+  }
+  const symbols = body.symbols.slice(0, 5);
+  const base = typeof body.base === "number" && isFinite(body.base) ? body.base : 1000;
+  const horizon: Horizon = body.horizon === "max" ? "max" : "5y";
+  const custom = body.custom && body.custom.enabled ? body.custom : { enabled: false, start: "", end: "" };
+
+  const span: SpanArg = custom.enabled
+    ? {
+        period1: Math.floor(new Date(custom.start + "T00:00:00Z").getTime() / 1000) ||
+          Math.floor(Date.now() / 1000) - 86400 * 365 * 5,
+        period2:
+          Math.floor(new Date(custom.end + "T23:59:59Z").getTime() / 1000) || Math.floor(Date.now() / 1000),
+      }
+    : horizon;
+
+  const perSymbol = await fetchSymbolData(symbols, span, rapidApiKey);
+  const { buffer, filename } = await buildWorkbook(perSymbol, symbols, base, horizon, custom);
+
   return new NextResponse(buffer, {
     status: 200,
     headers: {
@@ -262,5 +279,3 @@ function jsonError(status: number, message: string) {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
-
-

@@ -2,9 +2,6 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { validateUsTickerFormat } from '@/lib/ticker';
-import { useQuery } from '@tanstack/react-query';
-import ReturnsChart from '@/app/components/ReturnsChart';
-import PriceChart from '@/app/components/PriceChart';
 
 type Horizon = '5y' | 'max';
 
@@ -16,7 +13,6 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
   const [base, setBase] = useState<number>(1000);
   const [horizon, setHorizon] = useState<Horizon>('5y');
   const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>({ enabled: false, start: '', end: '' });
-  const [requested, setRequested] = useState(false);
 
   const canAddMore = symbols.length < 5;
 
