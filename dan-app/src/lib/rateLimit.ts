@@ -5,13 +5,14 @@ export type RateLimitResult = {
   retryAfterSeconds?: number;
 };
 
+const redis = createRedisClient().raw;
+
 export async function checkRateLimit(
   routeKey: string,
   userKey: string,
   limit: number = 30,
   windowSeconds: number = 60
 ): Promise<RateLimitResult> {
-  const redis = createRedisClient().raw;
   const key = `rl:${routeKey}:${userKey}:${windowSeconds}`;
   const nowMs = Date.now();
   const windowMs = windowSeconds * 1000;

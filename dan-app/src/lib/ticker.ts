@@ -22,4 +22,18 @@ export function validateUsTickerFormat(raw: string): string {
   return normalized;
 }
 
+export function parseSymbols(param: string | null): string[] {
+  if (!param) return [];
+  const parts = param
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  const normalized: string[] = [];
+  for (const raw of parts) {
+    const valid = validateUsTickerFormat(raw);
+    if (!normalized.includes(valid)) normalized.push(valid);
+  }
+  return normalized;
+}
+
 

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import KeyModal from "@/app/components/KeyModal";
 import ExportButton from "@/app/components/ExportButton";
-import InputsPanel from "@/app/components/InputsPanel";
 import ReturnsShell from "@/app/components/ReturnsShell";
 
 export default async function Home() {

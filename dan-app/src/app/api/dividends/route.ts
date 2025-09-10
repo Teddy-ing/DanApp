@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchSplitsAndDividends } from "@/providers/yahoo";
 import { toNyDateString, nyTodayDateString } from "@/lib/calendar";
 import { scrapeIssuerDividends } from "@/scrapers/ir";
-import { validateUsTickerFormat } from "@/lib/ticker";
+import { validateUsTickerFormat, parseSymbols } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
@@ -15,19 +15,6 @@ function parseRange(input: string | null): Range {
   return "5y";
 }
 
-function parseSymbols(param: string | null): string[] {
-  if (!param) return [];
-  const parts = param
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  const normalized: string[] = [];
-  for (const raw of parts) {
-    const valid = validateUsTickerFormat(raw);
-    if (!normalized.includes(valid)) normalized.push(valid);
-  }
-  return normalized;
-}
 
 function parseIrBases(params: URLSearchParams, symbols: string[]): Record<string, string[]> {
   const out: Record<string, string[]> = {};

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { createRedisClient } from "@/lib/redis";
+import { deriveAesGcmKey } from "@/lib/userKey";
 
 type SaveKeyBody = {
 	rapidapiKey: string;
@@ -14,24 +15,6 @@ function unauthorized() {
 	return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 }
 
-async function deriveAesGcmKey(secret: string, saltBytes: Uint8Array): Promise<CryptoKey> {
-	const enc = new TextEncoder();
-	const baseKey = await crypto.subtle.importKey(
-		"raw",
-		enc.encode(secret),
-		{ name: "HKDF" },
-		false,
-		["deriveKey"]
-	);
-	const salt = new Uint8Array(saltBytes).buffer;
-	return crypto.subtle.deriveKey(
-		{ name: "HKDF", hash: "SHA-256", salt, info: enc.encode("rapidapiKey") },
-		baseKey,
-		{ name: "AES-GCM", length: 256 },
-		false,
-		["encrypt", "decrypt"]
-	);
-}
 
 export async function POST(req: NextRequest) {
 	const session = await auth();

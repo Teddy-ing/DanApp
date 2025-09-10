@@ -21,7 +21,9 @@ export default function QueryProvider(props: PropsWithChildren) {
   return (
     <QueryClientProvider client={client}>
       {props.children}
-      <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      {process.env.NODE_ENV !== 'production' && (
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
+      )}
     </QueryClientProvider>
   );
 }

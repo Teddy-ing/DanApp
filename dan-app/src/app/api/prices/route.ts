@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
-import { validateUsTickerFormat } from "@/lib/ticker";
+import { parseSymbols } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
@@ -13,19 +13,6 @@ function parseRange(input: string | null): Range {
   return "5y";
 }
 
-function parseSymbols(param: string | null): string[] {
-  if (!param) return [];
-  const parts = param
-    .split(",")
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
-  const normalized: string[] = [];
-  for (const raw of parts) {
-    const valid = validateUsTickerFormat(raw);
-    if (!normalized.includes(valid)) normalized.push(valid);
-  }
-  return normalized;
-}
 
 function jsonError(status: number, message: string, details?: unknown) {
   return NextResponse.json(
@@ -69,17 +56,15 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const results = [] as Array<{ symbol: string; range: typeof range; candles: Awaited<ReturnType<typeof fetchDailyCandles>>; splits: Awaited<ReturnType<typeof fetchSplitsAndDividends>>["splits"] }>;
-    for (let idx = 0; idx < symbols.length; idx += 1) {
-      const symbol = symbols[idx]!;
-      const candles = await fetchDailyCandles(symbol, customSpan ?? range, { rapidApiKey });
-      await new Promise((r) => setTimeout(r, 500));
-      const events = await fetchSplitsAndDividends(symbol, customSpan ?? range, { rapidApiKey });
-      results.push({ symbol, range, candles, splits: events.splits });
-      if (idx < symbols.length - 1) await new Promise((r) => setTimeout(r, 800));
-    }
+    const items = await Promise.all(
+      symbols.map(async (symbol) => {
+        const candles = await fetchDailyCandles(symbol, customSpan ?? range, { rapidApiKey });
+        const events = await fetchSplitsAndDividends(symbol, customSpan ?? range, { rapidApiKey });
+        return { symbol, range, candles, splits: events.splits };
+      })
+    );
 
-    return NextResponse.json({ items: results });
+    return NextResponse.json({ items });
   } catch (err: unknown) {
     const { status, payload } = toApiError(err);
     return new NextResponse(JSON.stringify(payload), {

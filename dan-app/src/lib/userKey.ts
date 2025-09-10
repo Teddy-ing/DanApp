@@ -1,6 +1,6 @@
 import { createRedisClient } from "@/lib/redis";
 
-async function deriveAesGcmKey(secret: string, saltBytes: Uint8Array): Promise<CryptoKey> {
+export async function deriveAesGcmKey(secret: string, saltBytes: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HKDF" }, false, ["deriveKey"]);
   const salt = new Uint8Array(saltBytes).buffer;
