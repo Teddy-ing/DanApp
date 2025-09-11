@@ -4,6 +4,7 @@ import { parseSymbols } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
+import { checkRateLimit, extractUserId } from "@/lib/rateLimit";
 
 type Range = "5y" | "1y" | "max";
 
@@ -40,7 +41,16 @@ export async function GET(req: NextRequest) {
     return jsonError(400, 'RapidAPI key not set. Save your key first.');
   }
 
-  // Rate limiting disabled per product decision: requests bill against the user's RapidAPI key
+  const { allowed, retryAfterSeconds } = await checkRateLimit(
+    "prices",
+    extractUserId(req.headers)
+  );
+  if (!allowed) {
+    return NextResponse.json(
+      { error: { message: "Rate limit exceeded", details: { retryAfterSeconds } } },
+      { status: 429, headers: { "Retry-After": String(retryAfterSeconds ?? 60) } }
+    );
+  }
 
   const range = parseRange(url.searchParams.get("range"));
   const period1 = url.searchParams.get("period1");

@@ -13,13 +13,13 @@
 - [x] Monolithic export workbook handler — (dan-app/src/app/api/export/xlsx/route.ts:11-190+) — Maintainability — why: single large function hard to test.
 
 ## Codebase Issues
-- [ ] InputsPanel.tsx has unused imports and state variables (`useQuery`, `ReturnsChart`, `PriceChart`, `requested`, `setRequested`).
-- [ ] page.tsx imports `InputsPanel` but does not use it.
-- [ ] No test script configured in `package.json` (`npm test` fails).
-- [ ] `npm run build` fails because Next.js cannot fetch fonts `Geist` and `Geist Mono`.
+- [x] InputsPanel.tsx has unused imports and state variables (`useQuery`, `ReturnsChart`, `PriceChart`, `requested`, `setRequested`).
+- [x] page.tsx imports `InputsPanel` but does not use it.
+- [x] No test script configured in `package.json` (`npm test` fails).
+- [x] `npm run build` fails because Next.js cannot fetch fonts `Geist` and `Geist Mono`.
 
 ## Codebase Security Issues
-- [ ] `auth.ts` sets `trustHost: true`, trusting forwarded host headers and enabling host header spoofing.
-- [ ] `rateLimit.ts` uses `x-forwarded-for` without verification, allowing IP spoofing to bypass rate limits.
-- [ ] `prices/route.ts` and `returns/route.ts` disable rate limiting, exposing the server to high-volume request abuse.
-- [ ] `dividends/route.ts` accepts user-provided IR base URLs, letting the server fetch arbitrary addresses (SSRF risk).
+- [x] `auth.ts` sets `trustHost: true`, trusting forwarded host headers and enabling host header spoofing.
+- [x] `rateLimit.ts` uses `x-forwarded-for` without verification, allowing IP spoofing to bypass rate limits.
+- [x] `prices/route.ts` and `returns/route.ts` disable rate limiting, exposing the server to high-volume request abuse.
+- [x] `dividends/route.ts` accepts user-provided IR base URLs, letting the server fetch arbitrary addresses (SSRF risk).

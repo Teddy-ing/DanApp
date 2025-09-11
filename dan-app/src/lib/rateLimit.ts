@@ -1,11 +1,22 @@
-import { createRedisClient } from "./redis";
+import { createRedisClient, RedisClient } from "./redis";
+import { isIP } from "node:net";
 
 export type RateLimitResult = {
   allowed: boolean;
   retryAfterSeconds?: number;
 };
 
-const redis = createRedisClient().raw;
+let cachedRedis: RedisClient | null | undefined;
+function getRedis(): RedisClient | null {
+  if (cachedRedis === undefined) {
+    try {
+      cachedRedis = createRedisClient();
+    } catch {
+      cachedRedis = null;
+    }
+  }
+  return cachedRedis;
+}
 
 export async function checkRateLimit(
   routeKey: string,
@@ -13,18 +24,21 @@ export async function checkRateLimit(
   limit: number = 30,
   windowSeconds: number = 60
 ): Promise<RateLimitResult> {
+  const redis = getRedis();
+  if (!redis) return { allowed: true };
+
   const key = `rl:${routeKey}:${userKey}:${windowSeconds}`;
   const nowMs = Date.now();
   const windowMs = windowSeconds * 1000;
   const earliestMs = nowMs - windowMs;
 
   // Remove entries outside the window
-  await redis.zremrangebyscore(key, 0, earliestMs);
+  await redis.raw.zremrangebyscore(key, 0, earliestMs);
 
-  const count = await redis.zcard(key);
+  const count = await redis.raw.zcard(key);
   if (typeof count === "number" && count >= limit) {
     // Oldest timestamp to expire determines wait timea
-    const oldestMembers = (await redis.zrange(key, 0, 0)) as string[];
+    const oldestMembers = (await redis.raw.zrange(key, 0, 0)) as string[];
     let oldestMs = nowMs;
     if (oldestMembers && oldestMembers.length > 0) {
       const token = oldestMembers[0];
@@ -37,8 +51,8 @@ export async function checkRateLimit(
 
   // Add current request
   const member = `${nowMs}-${Math.random().toString(36).slice(2, 10)}`;
-  await redis.zadd(key, { score: nowMs, member });
-  await redis.expire(key, windowSeconds);
+  await redis.raw.zadd(key, { score: nowMs, member });
+  await redis.raw.expire(key, windowSeconds);
   return { allowed: true };
 }
 
@@ -46,8 +60,11 @@ export function extractUserId(headers: Headers): string {
   const explicit = headers.get("x-user-id");
   if (explicit && explicit.trim().length > 0) return explicit.trim();
   const xff = headers.get("x-forwarded-for");
-  const ip = xff?.split(",")[0]?.trim();
-  return ip && ip.length > 0 ? ip : "anon";
+  if (xff) {
+    const ip = xff.split(",")[0].trim();
+    if (isIP(ip)) return ip;
+  }
+  return "anon";
 }
 
 
