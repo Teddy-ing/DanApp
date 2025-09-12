@@ -9,7 +9,6 @@ const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 // Only log non-sensitive configuration to verify what the runtime sees
 if (process.env.NODE_ENV !== "development") {
   // Avoid logging secrets; show presence only
-  // eslint-disable-next-line no-console
   console.log(
     "[auth][debug] Runtime config:",
     JSON.stringify(

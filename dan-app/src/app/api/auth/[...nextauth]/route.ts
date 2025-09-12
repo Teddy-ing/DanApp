@@ -3,7 +3,6 @@ import { handlers } from "@/auth";
 // TEMP DEBUG WRAPPERS — remove after verification
 export async function GET(request: Request, context: unknown) {
   try {
-    // eslint-disable-next-line no-console
     console.log(
       "[auth][debug] GET /api/auth — incoming request",
       JSON.stringify(
@@ -19,13 +18,12 @@ export async function GET(request: Request, context: unknown) {
       )
     );
   } catch {}
-  // @ts-ignore - context passthrough is fine for NextAuth handlers
+  // @ts-expect-error - context passthrough is fine for NextAuth handlers
   return handlers.GET(request, context);
 }
 
 export async function POST(request: Request, context: unknown) {
   try {
-    // eslint-disable-next-line no-console
     console.log(
       "[auth][debug] POST /api/auth — incoming request",
       JSON.stringify(
@@ -41,7 +39,7 @@ export async function POST(request: Request, context: unknown) {
       )
     );
   } catch {}
-  // @ts-ignore - context passthrough is fine for NextAuth handlers
+  // @ts-expect-error - context passthrough is fine for NextAuth handlers
   return handlers.POST(request, context);
 }
 
