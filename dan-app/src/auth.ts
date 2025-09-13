@@ -61,7 +61,7 @@ if (process.env.NODE_ENV !== "development") {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret,
-  trustHost: false,
+  trustHost: true,
   session: { strategy: "jwt" },
   callbacks: {
     async session({ session, token }) {
