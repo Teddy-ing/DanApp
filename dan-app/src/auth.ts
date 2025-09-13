@@ -1,8 +1,16 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-const googleClientId = process.env.AUTH_GOOGLE_ID ?? process.env.GOOGLE_CLIENT_ID ?? "missing";
-const googleClientSecret = process.env.AUTH_GOOGLE_SECRET ?? process.env.GOOGLE_CLIENT_SECRET ?? "missing";
+const googleClientId =
+  process.env.AUTH_GOOGLE_ID ??
+  process.env.GOOGLE_ID ??
+  process.env.GOOGLE_CLIENT_ID ??
+  "missing";
+const googleClientSecret =
+  process.env.AUTH_GOOGLE_SECRET ??
+  process.env.GOOGLE_SECRET ??
+  process.env.GOOGLE_CLIENT_SECRET ??
+  "missing";
 const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
 // TEMP DEBUG LOGS — remove after verification
@@ -21,11 +29,34 @@ if (process.env.NODE_ENV !== "development") {
         has_NEXTAUTH_SECRET: Boolean(process.env.NEXTAUTH_SECRET),
         has_AUTH_GOOGLE_ID: Boolean(process.env.AUTH_GOOGLE_ID),
         has_AUTH_GOOGLE_SECRET: Boolean(process.env.AUTH_GOOGLE_SECRET),
+        has_GOOGLE_ID: Boolean(process.env.GOOGLE_ID),
+        has_GOOGLE_SECRET: Boolean(process.env.GOOGLE_SECRET),
+        has_GOOGLE_CLIENT_ID: Boolean(process.env.GOOGLE_CLIENT_ID),
+        has_GOOGLE_CLIENT_SECRET: Boolean(process.env.GOOGLE_CLIENT_SECRET),
       },
       null,
       0
     )
   );
+  try {
+    const visibleKeys = Object.keys(process.env).filter(
+      (k) => k.includes("GOOGLE") || k === "AUTH_SECRET" || k === "NEXTAUTH_SECRET"
+    );
+    console.log("[auth][debug] Present env keys (filtered):", visibleKeys);
+  } catch {}
+  try {
+    console.log(
+      "[auth][debug] Google provider presence:",
+      JSON.stringify(
+        {
+          googleClientIdMissing: googleClientId === "missing",
+          googleClientSecretMissing: googleClientSecret === "missing",
+        },
+        null,
+        0
+      )
+    );
+  } catch {}
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
