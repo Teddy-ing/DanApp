@@ -205,6 +205,7 @@ UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
 Upstash: create Global Redis; copy REST URL/TOKEN
 
 Google Cloud: OAuth consent (External), Web Client with redirect …/api/auth/callback/google
+  Note: App links directly to provider at `/api/auth/signin/google?callbackUrl=/` to skip the generic provider page. The Google OAuth redirect URI in GCP remains `/api/auth/callback/google`.
 
 GitHub Actions: CI (install → test) + deploy to Vercel on main
 
