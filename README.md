@@ -35,6 +35,13 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Price chart: "Price of {symbols}" using the same symbol display.
   - Implemented in `src/app/components/ReturnsView.tsx`.
 
+### Front page (marketing)
+
+- Concept A implemented for unauthenticated users: text-first hero, blue/indigo accents, single primary CTA (Google sign-in), usage-based free tier note.
+- Anchored sections: `#methodology`, `#reliability`, `#security`, `#faq` (includes `#pricing-usage`).
+- Centralized copy in `src/lib/marketingCopy.ts` for consistent messaging (scope, exclusions, usage, security, disclaimers).
+- Footer includes Terms/Privacy placeholders and “Data from Yahoo Finance via RapidAPI. For informational purposes only. Not investment advice. Data may be delayed.”
+
 ### Excel export (XLSX)
 
 - Server-side export (ExcelJS) with an "Export to Excel" button in the header.
