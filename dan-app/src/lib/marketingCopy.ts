@@ -22,7 +22,7 @@ export const marketingCopy = {
     reliability: "#reliability",
     security: "#security",
     faq: "#faq",
-    pricing: "#pricing",
+    pricing: "#pricing-usage",
   },
   ctas: {
     primary: "Sign in with Google (free)",

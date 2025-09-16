@@ -217,4 +217,10 @@ Footer:
 Data provided by Yahoo Finance via RapidAPI.
 For informational purposes only. Not investment advice.
 
+10) Front page (marketing)
+- Concept A (text-first) for unauthenticated users with a single primary CTA (Google sign-in).
+- Anchors: `#methodology`, `#reliability`, `#security`, `#faq` including `#pricing-usage` for the Pricing link.
+- Copy centralized in `src/lib/marketingCopy.ts`; scope/exclusions and usage note (50 one-time actions; pressing "Fetch returns" is an action).
+- Footer links placeholders: `/terms`, `/privacy`.
+
 Scraping: respect robots.txt; IR fallback cached 7 days to minimize load.
