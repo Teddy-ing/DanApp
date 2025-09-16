@@ -4,6 +4,7 @@ import { useState } from 'react';
 import InputsPanel from '@/app/components/InputsPanel';
 import ReturnsView from '@/app/components/ReturnsView';
 import DividendsPanel from '@/app/components/DividendsPanel';
+import StatsPanel from '@/app/components/StatsPanel';
 
 export default function ReturnsShell() {
   const [symbols, setSymbols] = useState<string[]>([]);
@@ -32,10 +33,17 @@ export default function ReturnsShell() {
                 setBase(base);
                 setHorizon(horizon);
                 setCustom(custom);
+              }} onStats={({ symbols, horizon, custom }) => {
+                setSymbols(symbols);
+                setHorizon(horizon);
+                setCustom(custom);
               }} />
             </div>
             <div className="mt-4">
               <DividendsPanel symbols={symbols} horizon={horizon} custom={custom} />
+            </div>
+            <div className="mt-4">
+              <StatsPanel symbols={symbols} horizon={horizon} custom={custom} />
             </div>
           </div>
           <div>

@@ -5,8 +5,8 @@ import { validateUsTickerFormat } from '@/lib/ticker';
 
 type Horizon = '5y' | 'max';
 
-export default function InputsPanel(props: { onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
-  const { onFetch } = props;
+export default function InputsPanel(props: { onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void; onStats?: (args: { symbols: string[]; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
+  const { onFetch, onStats } = props;
   const [symbols, setSymbols] = useState<string[]>([]);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -171,7 +171,7 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
           </div>
         </div>
 
-        <div className="mt-2">
+        <div className="mt-2 flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={() => { if (symbols.length > 0) { onFetch({ symbols, base, horizon, custom }); if (typeof window !== 'undefined') { window.localStorage.setItem('lastFetchParams', JSON.stringify({ symbols, base, horizon, custom })); } } }}
@@ -179,6 +179,14 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
             className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
             Fetch returns
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (symbols.length > 0 && onStats) { onStats({ symbols, horizon, custom }); if (typeof window !== 'undefined') { window.localStorage.setItem('lastStatsParams', JSON.stringify({ symbols, horizon, custom })); } } }}
+            disabled={symbols.length === 0}
+            className="inline-flex items-center rounded-md border border-black/10 dark:border-white/15 px-3 py-1.5 text-sm font-medium disabled:opacity-60"
+          >
+            Compute stats
           </button>
           {symbols.length === 0 && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">Add at least one symbol to enable fetch.</div>
