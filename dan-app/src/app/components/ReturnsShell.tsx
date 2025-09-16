@@ -22,6 +22,10 @@ export default function ReturnsShell() {
             setBase(base);
             setHorizon(horizon);
             setCustom(custom);
+          }} onStats={({ symbols, horizon, custom }) => {
+            setSymbols(symbols);
+            setHorizon(horizon);
+            setCustom(custom);
           }} />
         </div>
       ) : (
