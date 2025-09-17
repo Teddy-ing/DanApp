@@ -65,119 +65,119 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
         {query.isSuccess && query.data.items.map((it) => (
           <div key={it.symbol} className="">
             <div className="text-sm mb-1">{it.symbol}</div>
-            <table className="w-full text-sm border-collapse table-fixed">
+            <table className="w-full text-sm border-collapse table-fixed border border-black/10 dark:border-white/15">
               <thead>
                 <tr>
-                  <th className="text-left pr-4 py-1"></th>
-                  <th className="text-right pr-3 py-1 w-[12%]">Close</th>
-                  <th className="text-right pr-3 py-1 w-[14%]">Intraday Var</th>
-                  <th className="text-right pr-3 py-1 w-[12%]">Ret 1d</th>
-                  <th className="text-right pr-3 py-1 w-[12%]">Ret 5d</th>
-                  <th className="text-right pr-3 py-1 w-[12%]">Ret 10d</th>
-                  <th className="text-right pr-3 py-1 w-[12%]">Ret 15d</th>
-                  <th className="text-right pr-0 py-1 w-[12%]">Ret 20d</th>
+                  <th className="text-left pr-4 py-1 border border-black/10 dark:border-white/15"></th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Close</th>
+                  <th className="text-right pr-3 py-1 w-[14%] border border-black/10 dark:border-white/15">Intraday Var</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 1d</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 5d</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 10d</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 15d</th>
+                  <th className="text-right pr-0 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 20d</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td className="pr-4 py-1">CURRENT</td>
-                  <td className="text-right pr-3 py-1">{it.stats.current.close == null ? "—" : usd.format(it.stats.current.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.current.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.current.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.current.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.current.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.current.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.current.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">CURRENT</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.current.close == null ? "—" : usd.format(it.stats.current.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">Average last year</td>
-                  <td className="text-right pr-3 py-1">{it.stats.lastYear.average?.close == null ? "—" : usd.format(it.stats.lastYear.average.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.average?.intradayVariation ?? null)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.average?.returnsFrom.d1 ?? null)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.average?.returnsFrom.d5 ?? null)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.average?.returnsFrom.d10 ?? null)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.average?.returnsFrom.d15 ?? null)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.lastYear.average?.returnsFrom.d20 ?? null)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">Average last year</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.lastYear.average?.close == null ? "—" : usd.format(it.stats.lastYear.average.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.intradayVariation ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d1 ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d5 ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d10 ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d15 ?? null)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d20 ?? null)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">MIN last year</td>
-                  <td className="text-right pr-3 py-1">{it.stats.lastYear.min.close == null ? "—" : usd.format(it.stats.lastYear.min.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.min.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.min.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.min.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.min.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.min.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.lastYear.min.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MIN last year</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.lastYear.min.close == null ? "—" : usd.format(it.stats.lastYear.min.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">MAX last year</td>
-                  <td className="text-right pr-3 py-1">{it.stats.lastYear.max.close == null ? "—" : usd.format(it.stats.lastYear.max.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.max.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.max.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.max.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.max.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.max.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.lastYear.max.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MAX last year</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.lastYear.max.close == null ? "—" : usd.format(it.stats.lastYear.max.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">STD last year</td>
-                  <td className="text-right pr-3 py-1">{it.stats.lastYear.std.close == null ? "—" : usd.format(it.stats.lastYear.std.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.std.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.std.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.std.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.std.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.std.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.lastYear.std.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">STD last year</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.lastYear.std.close == null ? "—" : usd.format(it.stats.lastYear.std.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">VAR last year</td>
-                  <td className="text-right pr-3 py-1">{it.stats.lastYear.var.close == null ? "—" : usd.format(it.stats.lastYear.var.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.var.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.var.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.var.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.var.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.lastYear.var.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.lastYear.var.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">VAR last year</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.lastYear.var.close == null ? "—" : usd.format(it.stats.lastYear.var.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">MIN all time</td>
-                  <td className="text-right pr-3 py-1">{it.stats.allTime.min.close == null ? "—" : usd.format(it.stats.allTime.min.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.min.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.min.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.min.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.min.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.min.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.allTime.min.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MIN all time</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.allTime.min.close == null ? "—" : usd.format(it.stats.allTime.min.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">MAX all time</td>
-                  <td className="text-right pr-3 py-1">{it.stats.allTime.max.close == null ? "—" : usd.format(it.stats.allTime.max.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.max.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.max.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.max.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.max.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.max.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.allTime.max.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MAX all time</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.allTime.max.close == null ? "—" : usd.format(it.stats.allTime.max.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">STD all time</td>
-                  <td className="text-right pr-3 py-1">{it.stats.allTime.std.close == null ? "—" : usd.format(it.stats.allTime.std.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.std.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.std.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.std.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.std.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.std.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.allTime.std.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">STD all time</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.allTime.std.close == null ? "—" : usd.format(it.stats.allTime.std.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d20)}</td>
                 </tr>
                 <tr>
-                  <td className="pr-4 py-1">VAR all time</td>
-                  <td className="text-right pr-3 py-1">{it.stats.allTime.var.close == null ? "—" : usd.format(it.stats.allTime.var.close)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.var.intradayVariation)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.var.returnsFrom.d1)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.var.returnsFrom.d5)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.var.returnsFrom.d10)}</td>
-                  <td className="text-right pr-3 py-1">{pct(it.stats.allTime.var.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1">{pct(it.stats.allTime.var.returnsFrom.d20)}</td>
+                  <td className="pr-4 py-1 border border-black/10 dark:border-white/15">VAR all time</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{it.stats.allTime.var.close == null ? "—" : usd.format(it.stats.allTime.var.close)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.intradayVariation)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d1)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d5)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d10)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d15)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d20)}</td>
                 </tr>
               </tbody>
             </table>

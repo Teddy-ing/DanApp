@@ -178,7 +178,7 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
             disabled={symbols.length === 0}
             className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
-            Fetch returns
+            Returns
           </button>
           <button
             type="button"
@@ -186,7 +186,7 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
             disabled={symbols.length === 0}
             className="inline-flex items-center rounded-md border border-black/10 dark:border-white/15 px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
-            Compute stats
+            Stats
           </button>
           {symbols.length === 0 && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">Add at least one symbol to enable fetch.</div>
