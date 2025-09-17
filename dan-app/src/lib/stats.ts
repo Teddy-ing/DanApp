@@ -28,10 +28,15 @@ function lastDefined<T>(arr: Array<T | null | undefined>): T | null {
   return null;
 }
 
+function pickClose(c: DailyCandle): number | null {
+  return c.close != null ? c.close : (c.adjClose != null ? c.adjClose : null);
+}
+
 function computeIntradayVariationPerRow(candles: DailyCandle[]): Array<number | null> {
   return candles.map((c) => {
-    if (c.high == null || c.low == null || c.close == null || c.close === 0) return null;
-    return (c.high - c.low) / c.close;
+    const close = pickClose(c);
+    if (c.high == null || c.low == null || close == null || close === 0) return null;
+    return (c.high - c.low) / close;
   });
 }
 
@@ -163,7 +168,7 @@ function buildAgg(windowValues: {
 
 export function computeSymbolStats(candles: DailyCandle[]): SymbolStats {
   // Assumption: candles are chronological ascending
-  const close = candles.map((c) => c.close);
+  const close = candles.map((c) => pickClose(c));
   const intraday = computeIntradayVariationPerRow(candles);
   const d1 = computeReturnSeries(close, 1);
   const d5 = computeReturnSeries(close, 5);

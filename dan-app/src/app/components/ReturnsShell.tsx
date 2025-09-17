@@ -48,9 +48,11 @@ export default function ReturnsShell() {
                 setView('stats');
               }} />
             </div>
-            <div className="mt-4">
-              <DividendsPanel symbols={symbols} horizon={horizon} custom={custom} />
-            </div>
+            {view === 'returns' && (
+              <div className="mt-4">
+                <DividendsPanel symbols={symbols} horizon={horizon} custom={custom} />
+              </div>
+            )}
           </div>
           <div>
             {view === 'returns' ? (
