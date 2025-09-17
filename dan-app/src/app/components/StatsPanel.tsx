@@ -9,7 +9,7 @@ type CustomRange = { enabled: boolean; start: string; end: string };
 type StatsBucket = {
   close: number | null;
   intradayVariation: number | null;
-  returnsFrom: { d1: number | null; d5: number | null; d10: number | null; d15: number | null; d20: number | null };
+  returnsFrom: { d1: number | null; d5: number | null; d10: number | null; d15: number | null; d20: number | null; d40: number | null; d60: number | null; d90: number | null };
 };
 
 type StatsAgg = {
@@ -75,7 +75,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 5d</th>
                   <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 10d</th>
                   <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 15d</th>
-                  <th className="text-right pr-0 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 20d</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 20d</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 40d</th>
+                  <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 60d</th>
+                  <th className="text-right pr-0 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 90d</th>
                 </tr>
               </thead>
               <tbody>
@@ -87,7 +90,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.current.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">Average last year</td>
@@ -97,7 +103,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d5 ?? null)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d10 ?? null)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d15 ?? null)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d20 ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d20 ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d40 ?? null)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d60 ?? null)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.average?.returnsFrom.d90 ?? null)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MIN last year</td>
@@ -107,7 +116,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.min.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MAX last year</td>
@@ -117,7 +129,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.max.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">STD last year</td>
@@ -127,7 +142,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.std.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">VAR last year</td>
@@ -137,7 +155,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.lastYear.var.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MIN all time</td>
@@ -147,7 +168,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.min.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">MAX all time</td>
@@ -157,7 +181,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.max.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">STD all time</td>
@@ -167,7 +194,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.std.returnsFrom.d90)}</td>
                 </tr>
                 <tr>
                   <td className="pr-4 py-1 border border-black/10 dark:border-white/15">VAR all time</td>
@@ -177,7 +207,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d5)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d10)}</td>
                   <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d15)}</td>
-                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d20)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d40)}</td>
+                  <td className="text-right pr-3 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d60)}</td>
+                  <td className="text-right pr-0 py-1 border border-black/10 dark:border-white/15">{pct(it.stats.allTime.var.returnsFrom.d90)}</td>
                 </tr>
               </tbody>
             </table>
