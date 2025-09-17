@@ -216,6 +216,23 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
             </table>
           </div>
         ))}
+        {query.isSuccess && (
+          <div className="mt-4 rounded-xl border border-black/10 dark:border-white/15 p-4 sm:p-5 bg-white dark:bg-neutral-900">
+            <div className="text-sm font-medium mb-2">Definitions</div>
+            <ul className="text-sm text-gray-700 dark:text-gray-300 list-disc pl-5 space-y-1">
+              <li><span className="font-medium">Close</span>: latest available daily close (falls back to adjusted close if needed).</li>
+              <li><span className="font-medium">Intraday Var</span>: (high − low) ÷ close for each day, shown as a percentage. Aggregations summarize this per-day series.</li>
+              <li><span className="font-medium">Ret Nd</span>: percentage change of close from N trading days earlier: close[t] ÷ close[t−N] − 1.</li>
+              <li><span className="font-medium">CURRENT</span>: most recent values in the series (today/last trading day).</li>
+              <li><span className="font-medium">Average last year</span>: mean of the last ~255 trading days.</li>
+              <li><span className="font-medium">MIN/ MAX last year</span>: minimum/maximum within the last ~255 trading days.</li>
+              <li><span className="font-medium">STD last year</span>: population standard deviation over the last ~255 trading days.</li>
+              <li><span className="font-medium">VAR last year</span>: population variance over the last ~255 trading days.</li>
+              <li><span className="font-medium">MIN/ MAX all time</span>: minimum/maximum across all loaded data for the selected range.</li>
+              <li><span className="font-medium">STD/ VAR all time</span>: population standard deviation/variance across all loaded data for the selected range.</li>
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   );
