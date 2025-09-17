@@ -65,10 +65,10 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
         {query.isSuccess && query.data.items.map((it) => (
           <div key={it.symbol} className="">
             <div className="text-sm mb-1">{it.symbol}</div>
-            <table className="w-full text-sm border-collapse table-fixed border border-black/10 dark:border-white/15">
+            <table className="w-full text-sm border-collapse table-auto border border-black/10 dark:border-white/15">
               <thead>
                 <tr>
-                  <th className="text-left pr-4 py-1 border border-black/10 dark:border-white/15"></th>
+                  <th className="text-left pr-4 py-1 w-[16%] border border-black/10 dark:border-white/15"></th>
                   <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Close</th>
                   <th className="text-right pr-3 py-1 w-[14%] border border-black/10 dark:border-white/15">Intraday Var</th>
                   <th className="text-right pr-3 py-1 w-[12%] border border-black/10 dark:border-white/15">Ret 1d</th>
