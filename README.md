@@ -153,3 +153,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Analytics
+
+- This app uses `@vercel/analytics` for privacy-friendly page analytics.
+- Collection is enabled only when `VERCEL_ENV` is `production` (Vercel Production deployments).
+- Component is mounted in `dan-app/src/app/layout.tsx`.
