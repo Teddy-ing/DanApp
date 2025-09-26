@@ -19,7 +19,16 @@ export default function ReturnsView(props: {
   const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
   const enabled = symbols.length > 0;
 
-  const amountDisplay = useMemo(() => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(base), [base]);
+  const amountDisplay = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: Number.isInteger(base) ? 0 : 2,
+        maximumFractionDigits: Number.isInteger(base) ? 0 : 2,
+      }).format(base),
+    [base],
+  );
   const symbolsDisplay = useMemo(() => symbols.join(", "), [symbols]);
 
   const returnsQuery = useQuery({
