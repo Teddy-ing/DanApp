@@ -12,7 +12,7 @@ import {
   CartesianGrid,
   ReferenceLine,
 } from 'recharts';
-import type { LegendProps } from 'recharts';
+import type { LegendPayload as LegendEntry } from 'recharts/types/component/DefaultLegendContent';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
@@ -52,7 +52,7 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
     return rows;
   }, [props.dates, props.series, mode, props.base]);
 
-  const legendPayload = useMemo(() => {
+  const legendPayload = useMemo<LegendEntry[]>(() => {
     return props.series.map((s) => {
       let color = '#6b7280';
       for (let i = data.length - 1; i >= 0; i -= 1) {
@@ -67,16 +67,16 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
           break;
         }
       }
-      return { value: s.symbol, type: 'square' as const, color };
+      return { value: s.symbol, type: 'square', color };
     });
   }, [data, props.series]);
 
-  const renderLegend = useCallback((legendProps: LegendProps) => {
-    if (!legendProps?.payload) return null;
+  const renderLegend = useCallback(() => {
+    if (legendPayload.length === 0) return null;
     return (
       <div className="mt-2 flex flex-wrap gap-4 text-sm text-black dark:text-white">
-        {legendProps.payload.map((entry) => (
-          <span key={entry.value} className="flex items-center gap-2">
+        {legendPayload.map((entry) => (
+          <span key={entry.value ?? '—'} className="flex items-center gap-2">
             <span
               className="h-2 w-2 rounded-full"
               style={{ backgroundColor: entry.color ?? '#6b7280' }}
@@ -86,7 +86,7 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
         ))}
       </div>
     );
-  }, []);
+  }, [legendPayload]);
 
   return (
     <div className="w-full">
@@ -128,7 +128,7 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               }}
               labelFormatter={(label) => `${label}`}
             />
-            <Legend payload={legendPayload} content={renderLegend} />
+            <Legend content={renderLegend} />
             {props.series.map((s) => (
               <React.Fragment key={s.symbol}>
                 <Line
