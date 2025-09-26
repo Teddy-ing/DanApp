@@ -83,7 +83,8 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
                 y2={yDomain[1]}
                 x1={startDate}
                 x2={endDate}
-                fill="rgba(34,197,94,0.08)"
+                fill="#16a34a"
+                fillOpacity={0.16}
                 strokeOpacity={0}
               />
             )}
@@ -93,7 +94,8 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
                 y2={0}
                 x1={startDate}
                 x2={endDate}
-                fill="rgba(220,38,38,0.08)"
+                fill="#dc2626"
+                fillOpacity={0.16}
                 strokeOpacity={0}
               />
             )}
