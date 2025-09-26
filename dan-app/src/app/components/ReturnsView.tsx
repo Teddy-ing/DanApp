@@ -91,14 +91,14 @@ export default function ReturnsView(props: {
       </div>
       {returnsQuery.isSuccess && (
         <div className="mb-6">
-          <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
-          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
+          <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
+          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
         </div>
       )}
       {returnsQuery.isSuccess && (
         <div className="mb-6">
-          <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
-          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
+          <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
+          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
         </div>
       )}
       {pricesQuery.isSuccess && (
