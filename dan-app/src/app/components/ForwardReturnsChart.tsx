@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   LineChart,
   Line,
@@ -10,21 +10,15 @@ import {
   Legend,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
 } from 'recharts';
+import type { LegendProps } from 'recharts';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
 export default function ForwardReturnsChart(props: { dates: string[]; series: Series[]; base?: number }) {
   const [mode, setMode] = useState<'$' | '%'>('$');
-
-  const palette = [
-    '#5B8DEF',
-    '#E66E6E',
-    '#6DD3A8',
-    '#F5C26B',
-    '#B388EB',
-  ];
 
   const data = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
@@ -38,20 +32,61 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
         const startVal = s.value[i];
         const endVal = s.value[lastIndex];
         if (startVal == null || endVal == null || startVal === 0) {
-          row[s.symbol] = null;
+          row[`${s.symbol}__pos`] = null;
+          row[`${s.symbol}__neg`] = null;
           continue;
         }
-        if (mode === '$') {
-          const base = typeof props.base === 'number' && isFinite(props.base) ? props.base : 1000;
-          row[s.symbol] = base * (endVal / startVal - 1);
+        const baseAmount = typeof props.base === 'number' && isFinite(props.base) ? props.base : 1000;
+        const rawReturn = endVal / startVal - 1;
+        const nextVal = mode === '$' ? baseAmount * rawReturn : rawReturn * 100;
+        if (nextVal >= 0) {
+          row[`${s.symbol}__pos`] = nextVal;
+          row[`${s.symbol}__neg`] = null;
         } else {
-          row[s.symbol] = ((endVal / startVal) - 1) * 100;
+          row[`${s.symbol}__pos`] = null;
+          row[`${s.symbol}__neg`] = nextVal;
         }
       }
       rows.push(row);
     }
     return rows;
   }, [props.dates, props.series, mode, props.base]);
+
+  const legendPayload = useMemo(() => {
+    return props.series.map((s) => {
+      let color = '#6b7280';
+      for (let i = data.length - 1; i >= 0; i -= 1) {
+        const posVal = data[i]?.[`${s.symbol}__pos`];
+        if (typeof posVal === 'number') {
+          color = '#16a34a';
+          break;
+        }
+        const negVal = data[i]?.[`${s.symbol}__neg`];
+        if (typeof negVal === 'number') {
+          color = '#dc2626';
+          break;
+        }
+      }
+      return { value: s.symbol, type: 'square' as const, color };
+    });
+  }, [data, props.series]);
+
+  const renderLegend = useCallback((legendProps: LegendProps) => {
+    if (!legendProps?.payload) return null;
+    return (
+      <div className="mt-2 flex flex-wrap gap-4 text-sm text-black dark:text-white">
+        {legendProps.payload.map((entry) => (
+          <span key={entry.value} className="flex items-center gap-2">
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ backgroundColor: entry.color ?? '#6b7280' }}
+            />
+            {entry.value}
+          </span>
+        ))}
+      </div>
+    );
+  }, []);
 
   return (
     <div className="w-full">
@@ -81,9 +116,10 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
             <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={32} />
             <YAxis
               tick={{ fontSize: 12 }}
-              domain={["auto", "auto"]}
+              domain={[(dataMin: number) => Math.min(0, dataMin ?? 0), (dataMax: number) => Math.max(0, dataMax ?? 0)]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
+            <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" />
             <Tooltip
               formatter={(value: ValueType, name: NameType) => {
                 const num = typeof value === 'number' ? value : null;
@@ -92,18 +128,32 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               }}
               labelFormatter={(label) => `${label}`}
             />
-            <Legend />
-            {props.series.map((s, i) => (
-              <Line
-                key={s.symbol}
-                type="monotone"
-                dataKey={s.symbol}
-                dot={false}
-                stroke={palette[i % palette.length]}
-                strokeWidth={2}
-                isAnimationActive={false}
-                connectNulls
-              />
+            <Legend payload={legendPayload} content={renderLegend} />
+            {props.series.map((s) => (
+              <React.Fragment key={s.symbol}>
+                <Line
+                  type="monotone"
+                  dataKey={`${s.symbol}__pos`}
+                  name={s.symbol}
+                  dot={false}
+                  stroke="#16a34a"
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                  legendType="none"
+                />
+                <Line
+                  type="monotone"
+                  dataKey={`${s.symbol}__neg`}
+                  name={s.symbol}
+                  dot={false}
+                  stroke="#dc2626"
+                  strokeWidth={2}
+                  isAnimationActive={false}
+                  connectNulls={false}
+                  legendType="none"
+                />
+              </React.Fragment>
             ))}
           </LineChart>
         </ResponsiveContainer>
