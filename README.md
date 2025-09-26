@@ -42,6 +42,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Centralized copy in `src/lib/marketingCopy.ts` for consistent messaging (scope, exclusions, usage, security, disclaimers).
 - Footer includes Terms/Privacy placeholders and “Data from Yahoo Finance via RapidAPI. For informational purposes only. Not investment advice. Data may be delayed.”
 
+### Theme toggle (temporary)
+
+- Added a small icon-only theme toggle to the authenticated header (left of `Export to Excel`).
+- Defaults to follow system; user choice persists in `localStorage` and sets `html[data-theme]`.
+
 ### Excel export (XLSX)
 
 - Server-side export (ExcelJS) with an "Export to Excel" button in the header.

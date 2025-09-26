@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth, signIn } from "@/auth";
 import KeyModal from "@/app/components/KeyModal";
 import ExportButton from "@/app/components/ExportButton";
+import ThemeToggle from "@/app/components/ThemeToggle";
 import ReturnsShell from "@/app/components/ReturnsShell";
 import { marketingCopy } from "@/lib/marketingCopy";
 
@@ -140,6 +141,7 @@ export default async function Home() {
           <span>Signed in as {session.user.email || session.user.name}</span>
         </div>
         <div className="flex items-center gap-3 text-sm">
+          <ThemeToggle />
           <ExportButton />
           <KeyModal />
           <Link className="underline" href="/api/auth/signout">Sign out</Link>
