@@ -46,22 +46,29 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
 
   const tintStyle = useMemo(() => {
     if (rows.length === 0) return undefined;
-    const positiveOnly = max > 0 && min >= 0;
-    const negativeOnly = min < 0 && max <= 0;
-    if (positiveOnly) {
-      return { background: 'rgba(22, 163, 74, 0.25)' } satisfies React.CSSProperties;
+    const plotMargins = { top: 8, right: 12, bottom: 8, left: 12 } as const;
+    const baseStyle: React.CSSProperties = {
+      pointerEvents: 'none',
+      position: 'absolute',
+      top: plotMargins.top,
+      right: plotMargins.right,
+      bottom: plotMargins.bottom,
+      left: plotMargins.left,
+      borderRadius: 8,
+    };
+    if (max <= 0) {
+      return { ...baseStyle, background: 'rgba(220, 38, 38, 0.32)' };
     }
-    if (negativeOnly) {
-      return { background: 'rgba(220, 38, 38, 0.3)' } satisfies React.CSSProperties;
+    if (min >= 0) {
+      return { ...baseStyle, background: 'rgba(22, 163, 74, 0.26)' };
     }
-    if (max > 0 && min < 0) {
-      const zeroSplit = (-min) / (max - min);
-      const pct = Math.min(Math.max(zeroSplit * 100, 0), 100);
-      return {
-        background: `linear-gradient(to top, rgba(220, 38, 38, 0.3) 0%, rgba(220, 38, 38, 0.3) ${pct}%, rgba(22, 163, 74, 0.25) ${pct}%, rgba(22, 163, 74, 0.25) 100%)`,
-      } satisfies React.CSSProperties;
-    }
-    return undefined;
+    const zeroRatio = max / (max - min);
+    const clamp = (value: number) => Math.min(Math.max(value, 0), 1);
+    const pct = clamp(zeroRatio) * 100;
+    return {
+      ...baseStyle,
+      background: `linear-gradient(to bottom, rgba(22, 163, 74, 0.26) 0%, rgba(22, 163, 74, 0.26) ${pct}%, rgba(220, 38, 38, 0.32) ${pct}%, rgba(220, 38, 38, 0.32) 100%)`,
+    };
   }, [rows.length, min, max]);
 
   return (
@@ -85,7 +92,7 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
         </div>
       </div>
       <div className="relative h-[320px] w-full">
-        {tintStyle && <div className="pointer-events-none absolute inset-0" style={tintStyle} />}
+        {tintStyle && <div style={tintStyle} />}
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows} margin={{ left: 12, right: 12, top: 8, bottom: 8 }} syncId="sync-returns">
             <CartesianGrid strokeDasharray="3 3" stroke="rgb(0 0 0 / 0.06)" />
