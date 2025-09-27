@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -17,7 +17,12 @@ import type { NameType, ValueType } from 'recharts/types/component/DefaultToolti
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ReturnsChart(props: { dates: string[]; series: Series[] }) {
+type Props = {
+  dates: string[];
+  series: Series[];
+};
+
+export default function ReturnsChart({ dates, series }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
 
   const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
@@ -27,14 +32,14 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
     let min = 0;
     let max = 0;
 
-    for (let i = 0; i < props.dates.length; i += 1) {
-      const row: Record<string, number | string | null> = { date: props.dates[i] };
-      for (const series of props.series) {
-        const rawVal = series.value[i] ?? null;
-        const rawPct = series.pct[i] ?? null;
+    for (let i = 0; i < dates.length; i += 1) {
+      const row: Record<string, number | string | null> = { date: dates[i] };
+      for (const s of series) {
+        const rawVal = s.value[i] ?? null;
+        const rawPct = s.pct[i] ?? null;
         const nextVal = mode === '$' ? rawVal : (rawPct == null ? null : rawPct * 100);
         const isFiniteNumber = typeof nextVal === 'number' && Number.isFinite(nextVal);
-        row[series.symbol] = isFiniteNumber ? nextVal : null;
+        row[s.symbol] = isFiniteNumber ? nextVal : null;
         if (isFiniteNumber) {
           const value = nextVal as number;
           if (value < min) min = value;
@@ -48,7 +53,7 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
     const xMax = rows[rows.length - 1]?.date as string | undefined;
 
     return { data: rows, min, max, xMin, xMax };
-  }, [props.dates, props.series, mode]);
+  }, [dates, series, mode]);
 
   const yDomain = useMemo(() => [Math.min(0, min), Math.max(0, max)], [min, max]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
@@ -115,11 +120,11 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
               labelFormatter={(label) => `${label}`}
             />
             <Legend />
-            {props.series.map((series, index) => (
+            {series.map((s, index) => (
               <Line
-                key={series.symbol}
+                key={s.symbol}
                 type="monotone"
-                dataKey={series.symbol}
+                dataKey={s.symbol}
                 dot={false}
                 stroke={palette[index % palette.length]}
                 strokeWidth={2}

@@ -17,7 +17,13 @@ import type { NameType, ValueType } from 'recharts/types/component/DefaultToolti
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ForwardReturnsChart(props: { dates: string[]; series: Series[]; base?: number }) {
+type Props = {
+  dates: string[];
+  series: Series[];
+  base?: number;
+};
+
+export default function ForwardReturnsChart({ dates, series, base }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
 
   const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
@@ -26,25 +32,25 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
     const rows: Array<Record<string, number | string | null>> = [];
     let min = 0;
     let max = 0;
-    const lastIndex = props.dates.length - 1;
+    const lastIndex = dates.length - 1;
     if (lastIndex < 0) {
       return { data: rows, min, max, xMin: undefined, xMax: undefined };
     }
 
-    for (let i = 0; i < props.dates.length; i += 1) {
-      const row: Record<string, number | string | null> = { date: props.dates[i] };
-      for (const series of props.series) {
-        const startVal = series.value[i];
-        const endVal = series.value[lastIndex];
+    for (let i = 0; i < dates.length; i += 1) {
+      const row: Record<string, number | string | null> = { date: dates[i] };
+      for (const s of series) {
+        const startVal = s.value[i];
+        const endVal = s.value[lastIndex];
         if (startVal == null || endVal == null || startVal === 0) {
-          row[series.symbol] = null;
+          row[s.symbol] = null;
           continue;
         }
-        const baseAmount = typeof props.base === 'number' && Number.isFinite(props.base) ? props.base : 1000;
+        const baseAmount = typeof base === 'number' && Number.isFinite(base) ? base : 1000;
         const rawReturn = endVal / startVal - 1;
         const nextVal = mode === '$' ? baseAmount * rawReturn : rawReturn * 100;
         const isFiniteNumber = typeof nextVal === 'number' && Number.isFinite(nextVal);
-        row[series.symbol] = isFiniteNumber ? nextVal : null;
+        row[s.symbol] = isFiniteNumber ? nextVal : null;
         if (isFiniteNumber) {
           const value = nextVal as number;
           if (value < min) min = value;
@@ -58,7 +64,7 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
     const xMax = rows[rows.length - 1]?.date as string | undefined;
 
     return { data: rows, min, max, xMin, xMax };
-  }, [props.dates, props.series, props.base, mode]);
+  }, [dates, series, base, mode]);
 
   const yDomain = useMemo(() => [Math.min(0, min), Math.max(0, max)], [min, max]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
@@ -71,14 +77,14 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
           <button
             type="button"
             onClick={() => setMode('$')}
-            className={px-3 py-1.5 text-sm }
+            className={`px-3 py-1.5 text-sm ${mode === '$' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white text-black dark:bg-neutral-900 dark:text-white'}`}
           >
             $
           </button>
           <button
             type="button"
             onClick={() => setMode('%')}
-            className={px-3 py-1.5 text-sm border-l border-black/10 dark:border-white/15 }
+            className={`px-3 py-1.5 text-sm border-l border-black/10 dark:border-white/15 ${mode === '%' ? 'bg-black text-white dark:bg-white dark:text-black' : 'bg-white text-black dark:bg-neutral-900 dark:text-white'}`}
           >
             %
           </button>
@@ -92,7 +98,7 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
             <YAxis
               tick={{ fontSize: 12 }}
               domain={[yDomain[0], yDomain[1]]}
-              tickFormatter={(v) => (mode === '$' ? $ : ${Math.round(v as number)}%)}
+              tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
             {hasDomain && max > 0 && (
               <ReferenceArea
@@ -121,16 +127,16 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               formatter={(value: ValueType, name: NameType) => {
                 const num = typeof value === 'number' ? value : null;
                 const display = num == null ? '' : num.toFixed(2);
-                return mode === '$' ? [$, String(name)] : [${display}%, String(name)];
+                return mode === '$' ? [`$${display}`, String(name)] : [`${display}%`, String(name)];
               }}
-              labelFormatter={(label) => ${label}}
+              labelFormatter={(label) => `${label}`}
             />
             <Legend />
-            {props.series.map((series, index) => (
+            {series.map((s, index) => (
               <Line
-                key={series.symbol}
+                key={s.symbol}
                 type="monotone"
-                dataKey={series.symbol}
+                dataKey={s.symbol}
                 dot={false}
                 stroke={palette[index % palette.length]}
                 strokeWidth={2}
