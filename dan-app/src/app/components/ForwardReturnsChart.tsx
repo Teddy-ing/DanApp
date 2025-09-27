@@ -11,7 +11,6 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   ReferenceLine,
-  ReferenceArea,
 } from 'recharts';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
@@ -53,8 +52,26 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
   }, [props.dates, props.series, props.base, mode]);
 
   const yDomain = useMemo(() => [Math.min(0, min), Math.max(0, max)], [min, max]);
-  const xMin = rows[0]?.date as string | undefined;
-  const xMax = rows[rows.length - 1]?.date as string | undefined;
+
+  const tintStyle = useMemo(() => {
+    if (rows.length === 0) return undefined;
+    const positiveOnly = max > 0 && min >= 0;
+    const negativeOnly = min < 0 && max <= 0;
+    if (positiveOnly) {
+      return { background: 'rgba(22, 163, 74, 0.25)' } satisfies React.CSSProperties;
+    }
+    if (negativeOnly) {
+      return { background: 'rgba(220, 38, 38, 0.3)' } satisfies React.CSSProperties;
+    }
+    if (max > 0 && min < 0) {
+      const zeroSplit = (-min) / (max - min);
+      const pct = Math.min(Math.max(zeroSplit * 100, 0), 100);
+      return {
+        background: `linear-gradient(to top, rgba(220, 38, 38, 0.3) 0%, rgba(220, 38, 38, 0.3) ${pct}%, rgba(22, 163, 74, 0.25) ${pct}%, rgba(22, 163, 74, 0.25) 100%)`,
+      } satisfies React.CSSProperties;
+    }
+    return undefined;
+  }, [rows.length, min, max]);
 
   return (
     <div className="w-full">
@@ -77,7 +94,8 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
           </button>
         </div>
       </div>
-      <div className="h-[320px] w-full">
+      <div className="relative h-[320px] w-full">
+        {tintStyle && <div className="pointer-events-none absolute inset-0" style={tintStyle} />}
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows} margin={{ left: 12, right: 12, top: 8, bottom: 8 }} syncId="sync-returns">
             <CartesianGrid strokeDasharray="3 3" stroke="rgb(0 0 0 / 0.06)" />
@@ -87,28 +105,6 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
-            {rows.length > 0 && xMin && xMax && max > 0 && (
-              <ReferenceArea
-                y1={0}
-                y2={yDomain[1]}
-                x1={xMin}
-                x2={xMax}
-                fill="#16a34a"
-                fillOpacity={0.24}
-                strokeOpacity={0}
-              />
-            )}
-            {rows.length > 0 && xMin && xMax && min < 0 && (
-              <ReferenceArea
-                y1={yDomain[0]}
-                y2={0}
-                x1={xMin}
-                x2={xMax}
-                fill="#dc2626"
-                fillOpacity={0.24}
-                strokeOpacity={0}
-              />
-            )}
             <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" />
             <Tooltip
               formatter={(value: ValueType, name: NameType) => {
