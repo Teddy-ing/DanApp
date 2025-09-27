@@ -53,8 +53,8 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
   }, [props.dates, props.series, props.base, mode]);
 
   const yDomain = useMemo(() => [Math.min(0, min), Math.max(0, max)], [min, max]);
-  const startDate = props.dates[0];
-  const endDate = props.dates[props.dates.length - 1];
+  const xMin = rows[0]?.date as string | undefined;
+  const xMax = rows[rows.length - 1]?.date as string | undefined;
 
   return (
     <div className="w-full">
@@ -87,25 +87,25 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
-            {rows.length > 0 && max > 0 && (
+            {rows.length > 0 && xMin && xMax && max > 0 && (
               <ReferenceArea
                 y1={0}
                 y2={yDomain[1]}
-                x1="dataMin"
-                x2="dataMax"
+                x1={xMin}
+                x2={xMax}
                 fill="#16a34a"
-                fillOpacity={0.16}
+                fillOpacity={0.24}
                 strokeOpacity={0}
               />
             )}
-            {rows.length > 0 && min < 0 && (
+            {rows.length > 0 && xMin && xMax && min < 0 && (
               <ReferenceArea
                 y1={yDomain[0]}
                 y2={0}
-                x1="dataMin"
-                x2="dataMax"
+                x1={xMin}
+                x2={xMax}
                 fill="#dc2626"
-                fillOpacity={0.16}
+                fillOpacity={0.24}
                 strokeOpacity={0}
               />
             )}
