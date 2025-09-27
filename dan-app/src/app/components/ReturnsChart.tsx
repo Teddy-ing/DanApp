@@ -55,7 +55,25 @@ export default function ReturnsChart({ dates, series }: Props) {
     return { data: rows, min, max, xMin, xMax };
   }, [dates, series, mode]);
 
-  const yDomain = useMemo(() => [Math.min(0, min), Math.max(0, max)], [min, max]);
+  const yDomain = useMemo(() => {
+    // Ensure 0-line is always visible.
+    // In % mode, pad all-positive to -10% and all-negative to +10% (symmetric).
+    if (mode === '%') {
+      const minWithZero = Math.min(min, 0);
+      const maxWithZero = Math.max(max, 0);
+      if (max <= 0) {
+        // Entire range <= 0 → extend top to +10%
+        return [minWithZero, Math.max(10, maxWithZero)];
+      }
+      if (min >= 0) {
+        // Entire range >= 0 → extend bottom to -10%
+        return [Math.min(-10, minWithZero), maxWithZero];
+      }
+      return [minWithZero, maxWithZero];
+    }
+    // $ mode: just include 0 without extra padding
+    return [Math.min(0, min), Math.max(0, max)];
+  }, [min, max, mode]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (

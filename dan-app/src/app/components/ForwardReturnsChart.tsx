@@ -66,7 +66,20 @@ export default function ForwardReturnsChart({ dates, series, base }: Props) {
     return { data: rows, min, max, xMin, xMax };
   }, [dates, series, base, mode]);
 
-  const yDomain = useMemo(() => [Math.min(0, min), Math.max(0, max)], [min, max]);
+  const yDomain = useMemo(() => {
+    if (mode === '%') {
+      const minWithZero = Math.min(min, 0);
+      const maxWithZero = Math.max(max, 0);
+      if (max <= 0) {
+        return [minWithZero, Math.max(10, maxWithZero)];
+      }
+      if (min >= 0) {
+        return [Math.min(-10, minWithZero), maxWithZero];
+      }
+      return [minWithZero, maxWithZero];
+    }
+    return [Math.min(0, min), Math.max(0, max)];
+  }, [min, max, mode]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (
