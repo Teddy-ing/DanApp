@@ -87,23 +87,23 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
-            {startDate && endDate && max > 0 && (
+            {rows.length > 0 && max > 0 && (
               <ReferenceArea
                 y1={0}
                 y2={yDomain[1]}
-                x1={startDate}
-                x2={endDate}
+                x1="dataMin"
+                x2="dataMax"
                 fill="#16a34a"
                 fillOpacity={0.16}
                 strokeOpacity={0}
               />
             )}
-            {startDate && endDate && min < 0 && (
+            {rows.length > 0 && min < 0 && (
               <ReferenceArea
                 y1={yDomain[0]}
                 y2={0}
-                x1={startDate}
-                x2={endDate}
+                x1="dataMin"
+                x2="dataMax"
                 fill="#dc2626"
                 fillOpacity={0.16}
                 strokeOpacity={0}
