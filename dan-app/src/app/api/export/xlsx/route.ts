@@ -5,6 +5,50 @@ import { getDecryptedRapidApiKey } from "@/lib/userKey";
 import { fetchDailyCandles, fetchSplitsAndDividends, DailyCandle, DividendEvent, SplitEvent } from "@/providers/yahoo";
 import { toNyDateString, nyTodayDateString } from "@/lib/calendar";
 
+
+const INVALID_WORKSHEET_CHARS = /[\[\]\/\*\?:']/g;
+const CONTROL_CHARS = /[\x00-\x1F\x7F]/g;
+const FILENAME_DISALLOWED = /[^A-Za-z0-9._ -]/g;
+
+type SheetNameState = {
+  used: Set<string>;
+  baseCounts: Map<string, number>;
+};
+
+function normalizeWorksheetBaseName(name: string): string {
+  const cleaned = name.replace(CONTROL_CHARS, "").replace(INVALID_WORKSHEET_CHARS, "_").trim();
+  return cleaned.length > 0 ? cleaned : "Symbol";
+}
+
+function nextWorksheetName(rawName: string, state: SheetNameState): string {
+  const base = normalizeWorksheetBaseName(rawName).slice(0, 31) || "Symbol";
+  let candidate = base;
+  let counter = state.baseCounts.get(base) ?? 0;
+
+  while (state.used.has(candidate)) {
+    counter += 1;
+    const suffix = `_${counter}`;
+    const trimmedBase = base.slice(0, Math.max(0, 31 - suffix.length)) || "Sheet";
+    candidate = `${trimmedBase}${suffix}`;
+  }
+
+  state.baseCounts.set(base, counter);
+  state.used.add(candidate);
+  return candidate;
+}
+
+function sanitizeFilenameSegment(segment: string): string {
+  const cleaned = segment.replace(/[\r\n]+/g, " ").replace(FILENAME_DISALLOWED, " ").trim();
+  const normalized = cleaned.replace(/\s+/g, "_");
+  return normalized.slice(0, 40) || "item";
+}
+
+function buildAttachmentFilename(symbols: string[], nyToday: string): string {
+  const safeSegments = symbols.map(sanitizeFilenameSegment).filter(Boolean);
+  const base = (safeSegments.join("__") || "export").slice(0, 120);
+  return `${base}_${nyToday}_returns.xlsx`;
+}
+
 type Horizon = "5y" | "max" | "1y";
 type SpanArg = { period1: number; period2?: number } | Horizon;
 
@@ -56,9 +100,13 @@ async function buildWorkbook(
 
   // Per-symbol sheets and metric rows
   const unionCalendar = new Set<string>();
-  for (const s of perSymbol) {
-    const sheetName = s.symbol.substring(0, 31);
-    const ws = wb.addWorksheet(sheetName);
+  const sheetNameState: SheetNameState = { used: new Set<string>(), baseCounts: new Map<string, number>() };
+  const workbookSymbols = perSymbol.map((entry) => ({
+    ...entry,
+    sheetName: nextWorksheetName(entry.symbol, sheetNameState),
+  }));
+  for (const s of workbookSymbols) {
+    const ws = wb.addWorksheet(s.sheetName);
     ws.columns = [
       { header: "Date", key: "date", width: 12 },
       { header: "Open", key: "open", width: 12 },
@@ -151,9 +199,9 @@ async function buildWorkbook(
     // Add metrics to summary sheet for this symbol
     const metricsRow = summary.addRow([]);
     metricsRow.getCell(1).value = s.symbol;
-    const startDateFormula = `INDEX('${sheetName}'!A:A,2)`;
-    const endDateFormula = `INDEX('${sheetName}'!A:A,COUNTA('${sheetName}'!A:A))`;
-    const finalValueFormula = `INDEX('${sheetName}'!I:I,COUNTA('${sheetName}'!A:A))`;
+    const startDateFormula = `INDEX('${s.sheetName}'!A:A,2)`;
+    const endDateFormula = `INDEX('${s.sheetName}'!A:A,COUNTA('${s.sheetName}'!A:A))`;
+    const finalValueFormula = `INDEX('${s.sheetName}'!I:I,COUNTA('${s.sheetName}'!A:A))`;
     const totalReturnFormula = `${finalValueFormula}/$B$2-1`;
     const daysFormula = `DATEVALUE(${endDateFormula})-DATEVALUE(${startDateFormula})`;
     const cagrFormula = `IF(${daysFormula}>0,IF(${finalValueFormula}>0,POWER(${finalValueFormula}/$B$2,(${daysFormula})/365)-1,0),0)`;
@@ -182,7 +230,7 @@ async function buildWorkbook(
   if (forwardDates.length > 0) {
     const forward = wb.addWorksheet("Forward");
     const forwardColumns: Array<{ header: string; width?: number }> = [{ header: "Date", width: 12 }];
-    for (const s of perSymbol) {
+    for (const s of workbookSymbols) {
       forwardColumns.push({ header: `${s.symbol} $`, width: 14 });
       forwardColumns.push({ header: `${s.symbol} %`, width: 12 });
     }
@@ -196,7 +244,7 @@ async function buildWorkbook(
     }
 
     // number formats
-    for (let idx = 0; idx < perSymbol.length; idx += 1) {
+    for (let idx = 0; idx < workbookSymbols.length; idx += 1) {
       const baseCol = 2 + idx * 2;
       forward.getColumn(baseCol).numFmt = "$#,##0.00"; // $
       forward.getColumn(baseCol + 1).numFmt = "0.00%"; // %
@@ -208,9 +256,9 @@ async function buildWorkbook(
       const date = forwardDates[r]!;
       forward.addRow([date]);
       // Fill formulas per symbol
-      for (let si = 0; si < perSymbol.length; si += 1) {
-        const s = perSymbol[si]!;
-        const sheetName = s.symbol.substring(0, 31);
+      for (let si = 0; si < workbookSymbols.length; si += 1) {
+        const s = workbookSymbols[si]!;
+        const sheetName = s.sheetName;
         const startVal = `IFERROR(INDEX('${sheetName}'!I:I, MATCH($A${rowIndex}, '${sheetName}'!A:A, 0)), NA())`;
         const endVal = `INDEX('${sheetName}'!I:I, COUNTA('${sheetName}'!A:A))`;
         const dollarCell = forward.getCell(rowIndex, 2 + si * 2);
@@ -225,7 +273,7 @@ async function buildWorkbook(
   }
 
   const nyToday = nyTodayDateString();
-  const filename = `${symbols.join(', ')} ${nyToday} returns.xlsx`;
+  const filename = buildAttachmentFilename(symbols, nyToday);
   const buffer = await wb.xlsx.writeBuffer();
   return { buffer, filename };
 }
@@ -279,3 +327,4 @@ function jsonError(status: number, message: string) {
     headers: { "content-type": "application/json; charset=utf-8" },
   });
 }
+

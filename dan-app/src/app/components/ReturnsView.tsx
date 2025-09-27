@@ -19,7 +19,16 @@ export default function ReturnsView(props: {
   const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
   const enabled = symbols.length > 0;
 
-  const amountDisplay = useMemo(() => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(base), [base]);
+  const amountDisplay = useMemo(
+    () =>
+      new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: Number.isInteger(base) ? 0 : 2,
+        maximumFractionDigits: Number.isInteger(base) ? 0 : 2,
+      }).format(base),
+    [base],
+  );
   const symbolsDisplay = useMemo(() => symbols.join(", "), [symbols]);
 
   const returnsQuery = useQuery({
@@ -82,14 +91,14 @@ export default function ReturnsView(props: {
       </div>
       {returnsQuery.isSuccess && (
         <div className="mb-6">
-          <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
-          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
+          <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
+          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
         </div>
       )}
       {returnsQuery.isSuccess && (
         <div className="mb-6">
-          <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
-          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
+          <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
+          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
         </div>
       )}
       {pricesQuery.isSuccess && (

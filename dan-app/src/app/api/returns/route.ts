@@ -6,7 +6,7 @@ import { gzipSync } from "zlib";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
-import { checkRateLimit, extractUserId } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 
 type Horizon = "5y" | "max";
 
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
 
   const { allowed, retryAfterSeconds } = await checkRateLimit(
     "returns",
-    extractUserId(req.headers)
+    `user:${userId}`
   );
   if (!allowed) {
     return NextResponse.json(

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import QueryProvider from "@/app/QueryProvider";
+import { Analytics } from "@vercel/analytics/react";
 
 export const metadata: Metadata = {
   title: "Stock Total-Return Visualizer",
@@ -20,6 +21,7 @@ export default function RootLayout({
       <body className="antialiased">
         <a href="#main-content" className="skip-link">Skip to content</a>
         <QueryProvider>{children}</QueryProvider>
+        {process.env.VERCEL_ENV === 'production' ? <Analytics /> : null}
       </body>
     </html>
   );

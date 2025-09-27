@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -10,35 +10,71 @@ import {
   Legend,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ReturnsChart(props: { dates: string[]; series: Series[] }) {
+type Props = {
+  dates: string[];
+  series: Series[];
+};
+
+export default function ReturnsChart({ dates, series }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
 
-  const palette = [
-    '#5B8DEF',
-    '#E66E6E',
-    '#6DD3A8',
-    '#F5C26B',
-    '#B388EB',
-  ];
+  const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
 
-  const data = useMemo(() => {
+  const { data, min, max, xMin, xMax } = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
-    for (let i = 0; i < props.dates.length; i += 1) {
-      const row: Record<string, number | string | null> = { date: props.dates[i] };
-      for (const s of props.series) {
-        const val = s.value[i] ?? null;
-        const pct = s.pct[i] ?? null;
-        row[s.symbol] = mode === '$' ? val : (pct == null ? null : pct * 100);
+    let min = 0;
+    let max = 0;
+
+    for (let i = 0; i < dates.length; i += 1) {
+      const row: Record<string, number | string | null> = { date: dates[i] };
+      for (const s of series) {
+        const rawVal = s.value[i] ?? null;
+        const rawPct = s.pct[i] ?? null;
+        const nextVal = mode === '$' ? rawVal : (rawPct == null ? null : rawPct * 100);
+        const isFiniteNumber = typeof nextVal === 'number' && Number.isFinite(nextVal);
+        row[s.symbol] = isFiniteNumber ? nextVal : null;
+        if (isFiniteNumber) {
+          const value = nextVal as number;
+          if (value < min) min = value;
+          if (value > max) max = value;
+        }
       }
       rows.push(row);
     }
-    return rows;
-  }, [props.dates, props.series, mode]);
+
+    const xMin = rows[0]?.date as string | undefined;
+    const xMax = rows[rows.length - 1]?.date as string | undefined;
+
+    return { data: rows, min, max, xMin, xMax };
+  }, [dates, series, mode]);
+
+  const yDomain = useMemo(() => {
+    // Ensure 0-line is always visible.
+    // In % mode, pad all-positive to -10% and all-negative to +10% (symmetric).
+    if (mode === '%') {
+      const minWithZero = Math.min(min, 0);
+      const maxWithZero = Math.max(max, 0);
+      if (max <= 0) {
+        // Entire range <= 0 → extend top to +10%
+        return [minWithZero, Math.max(10, maxWithZero)];
+      }
+      if (min >= 0) {
+        // Entire range >= 0 → extend bottom to -10%
+        return [Math.min(-10, minWithZero), maxWithZero];
+      }
+      return [minWithZero, maxWithZero];
+    }
+    // $ mode: just include 0 without extra padding
+    return [Math.min(0, min), Math.max(0, max)];
+  }, [min, max, mode]);
+  const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (
     <div className="w-full">
@@ -67,9 +103,32 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
             <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={32} />
             <YAxis
               tick={{ fontSize: 12 }}
-              domain={['auto', 'auto']}
+              domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
+            {hasDomain && max > 0 && (
+              <ReferenceArea
+                y1={0}
+                y2={yDomain[1]}
+                x1={xMin}
+                x2={xMax}
+                fill="#16a34a"
+                fillOpacity={0.2}
+                strokeOpacity={0}
+              />
+            )}
+            {hasDomain && min < 0 && (
+              <ReferenceArea
+                y1={yDomain[0]}
+                y2={0}
+                x1={xMin}
+                x2={xMax}
+                fill="#dc2626"
+                fillOpacity={0.18}
+                strokeOpacity={0}
+              />
+            )}
+            <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" />
             <Tooltip
               formatter={(value: ValueType, name: NameType) => {
                 const num = typeof value === 'number' ? value : null;
@@ -79,13 +138,13 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
               labelFormatter={(label) => `${label}`}
             />
             <Legend />
-            {props.series.map((s, i) => (
+            {series.map((s, index) => (
               <Line
                 key={s.symbol}
                 type="monotone"
                 dataKey={s.symbol}
                 dot={false}
-                stroke={palette[i % palette.length]}
+                stroke={palette[index % palette.length]}
                 strokeWidth={2}
                 isAnimationActive={false}
                 connectNulls
@@ -97,5 +156,3 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
     </div>
   );
 }
-
-

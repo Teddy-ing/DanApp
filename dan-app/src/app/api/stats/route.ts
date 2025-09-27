@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getDecryptedRapidApiKey } from "@/lib/userKey";
-import { checkRateLimit, extractUserId } from "@/lib/rateLimit";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
 import { parseSymbols } from "@/lib/ticker";
 import { fetchDailyCandles } from "@/providers/yahoo";
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
   const { allowed, retryAfterSeconds } = await checkRateLimit(
     "stats",
-    extractUserId(req.headers)
+    `user:${userId}`
   );
   if (!allowed) {
     return NextResponse.json(

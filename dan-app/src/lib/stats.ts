@@ -3,7 +3,7 @@ import type { DailyCandle } from "@/providers/yahoo";
 export type StatsBucket = {
   close: number | null;
   intradayVariation: number | null; // 0..1
-  returnsFrom: { d1: number | null; d5: number | null; d10: number | null; d15: number | null; d20: number | null };
+  returnsFrom: { d1: number | null; d5: number | null; d10: number | null; d15: number | null; d20: number | null; d40: number | null; d60: number | null; d90: number | null };
 };
 
 export type StatsAgg = {
@@ -28,10 +28,15 @@ function lastDefined<T>(arr: Array<T | null | undefined>): T | null {
   return null;
 }
 
+function pickClose(c: DailyCandle): number | null {
+  return c.close != null ? c.close : (c.adjClose != null ? c.adjClose : null);
+}
+
 function computeIntradayVariationPerRow(candles: DailyCandle[]): Array<number | null> {
   return candles.map((c) => {
-    if (c.high == null || c.low == null || c.close == null || c.close === 0) return null;
-    return (c.high - c.low) / c.close;
+    const close = pickClose(c);
+    if (c.high == null || c.low == null || close == null || close === 0) return null;
+    return (c.high - c.low) / close;
   });
 }
 
@@ -99,6 +104,9 @@ function buildAgg(windowValues: {
   d10: Array<number | null>;
   d15: Array<number | null>;
   d20: Array<number | null>;
+  d40: Array<number | null>;
+  d60: Array<number | null>;
+  d90: Array<number | null>;
 }, includeAverage: boolean): StatsAgg {
   const average: StatsBucket | undefined = includeAverage ? {
     close: avg(windowValues.close),
@@ -109,6 +117,9 @@ function buildAgg(windowValues: {
       d10: avg(windowValues.d10),
       d15: avg(windowValues.d15),
       d20: avg(windowValues.d20),
+      d40: avg(windowValues.d40),
+      d60: avg(windowValues.d60),
+      d90: avg(windowValues.d90),
     },
   } : undefined;
 
@@ -123,6 +134,9 @@ function buildAgg(windowValues: {
         d10: minVal(windowValues.d10),
         d15: minVal(windowValues.d15),
         d20: minVal(windowValues.d20),
+        d40: minVal(windowValues.d40),
+        d60: minVal(windowValues.d60),
+        d90: minVal(windowValues.d90),
       },
     },
     max: {
@@ -134,6 +148,9 @@ function buildAgg(windowValues: {
         d10: maxVal(windowValues.d10),
         d15: maxVal(windowValues.d15),
         d20: maxVal(windowValues.d20),
+        d40: maxVal(windowValues.d40),
+        d60: maxVal(windowValues.d60),
+        d90: maxVal(windowValues.d90),
       },
     },
     std: {
@@ -145,6 +162,9 @@ function buildAgg(windowValues: {
         d10: stdPopulation(windowValues.d10),
         d15: stdPopulation(windowValues.d15),
         d20: stdPopulation(windowValues.d20),
+        d40: stdPopulation(windowValues.d40),
+        d60: stdPopulation(windowValues.d60),
+        d90: stdPopulation(windowValues.d90),
       },
     },
     var: {
@@ -156,6 +176,9 @@ function buildAgg(windowValues: {
         d10: variancePopulation(windowValues.d10),
         d15: variancePopulation(windowValues.d15),
         d20: variancePopulation(windowValues.d20),
+        d40: variancePopulation(windowValues.d40),
+        d60: variancePopulation(windowValues.d60),
+        d90: variancePopulation(windowValues.d90),
       },
     },
   };
@@ -163,13 +186,16 @@ function buildAgg(windowValues: {
 
 export function computeSymbolStats(candles: DailyCandle[]): SymbolStats {
   // Assumption: candles are chronological ascending
-  const close = candles.map((c) => c.close);
+  const close = candles.map((c) => pickClose(c));
   const intraday = computeIntradayVariationPerRow(candles);
   const d1 = computeReturnSeries(close, 1);
   const d5 = computeReturnSeries(close, 5);
   const d10 = computeReturnSeries(close, 10);
   const d15 = computeReturnSeries(close, 15);
   const d20 = computeReturnSeries(close, 20);
+  const d40 = computeReturnSeries(close, 40);
+  const d60 = computeReturnSeries(close, 60);
+  const d90 = computeReturnSeries(close, 90);
 
   const current: StatsBucket = {
     close: pickCurrent(close),
@@ -180,6 +206,9 @@ export function computeSymbolStats(candles: DailyCandle[]): SymbolStats {
       d10: pickCurrent(d10),
       d15: pickCurrent(d15),
       d20: pickCurrent(d20),
+      d40: pickCurrent(d40),
+      d60: pickCurrent(d60),
+      d90: pickCurrent(d90),
     },
   };
 
@@ -192,6 +221,9 @@ export function computeSymbolStats(candles: DailyCandle[]): SymbolStats {
     d10: tail(d10, lastYearWindow),
     d15: tail(d15, lastYearWindow),
     d20: tail(d20, lastYearWindow),
+    d40: tail(d40, lastYearWindow),
+    d60: tail(d60, lastYearWindow),
+    d90: tail(d90, lastYearWindow),
   };
 
   const at = {
@@ -202,6 +234,9 @@ export function computeSymbolStats(candles: DailyCandle[]): SymbolStats {
     d10,
     d15,
     d20,
+    d40,
+    d60,
+    d90,
   };
 
   const lastYear = buildAgg(ly, true);

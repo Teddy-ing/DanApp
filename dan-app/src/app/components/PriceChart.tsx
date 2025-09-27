@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import type { Props as LegendContentProps } from 'recharts/types/component/DefaultLegendContent';
 
 type Candle = { dateUtcSeconds: number; close: number | null };
 
@@ -23,6 +24,21 @@ export default function PriceChart(props: { items: Array<{ symbol: string; candl
     return rows;
   }, [props.items]);
 
+  const renderLegend = useCallback((legendProps: LegendContentProps) => {
+    const payload = legendProps.payload ?? [];
+    if (payload.length === 0) return null;
+    return (
+      <div className="mt-2 flex flex-wrap gap-4 text-sm text-black dark:text-white">
+        {payload.map((entry) => (
+          <span key={entry.value ?? '—'} className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color ?? '#6b7280' }} />
+            {entry.value}
+          </span>
+        ))}
+      </div>
+    );
+  }, []);
+
   return (
     <div className="h-[360px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -31,7 +47,7 @@ export default function PriceChart(props: { items: Array<{ symbol: string; candl
           <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={32} />
           <YAxis tick={{ fontSize: 12 }} domain={['auto', 'auto']} />
           <Tooltip />
-          <Legend />
+          <Legend content={renderLegend} />
           {props.items.map((s, i) => (
             <Line
               key={s.symbol}
