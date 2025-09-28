@@ -157,7 +157,7 @@ If data missing on d → push null for that symbol to keep arrays aligned.
 Multi-symbol chip input (max 5); base amount numeric input (default 1000); horizon toggle (5y / max)
 
 Recharts multi-line chart with $ and % view toggle
-- Y-axis domain rule: in % mode, always include 0 and pad to ±10% when the series is all-positive or all-negative; in $ mode, ensure 0 is included without extra padding. This keeps the 0-line visible and stabilizes tinted background rendering.
+  - Y-axis domain rule: 0 is fixed at 10% from the bottom (relative axis position) using asymmetric limits in both $ and % modes; minimal range is enforced only when all data is 0. This keeps the 0-line consistently visible and stabilizes tinted background rendering.
 
 Tooltip: date + per-symbol $ and %; optional markers for dividend reinvests (later)
 

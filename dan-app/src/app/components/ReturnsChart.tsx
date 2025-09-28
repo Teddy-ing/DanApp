@@ -56,24 +56,22 @@ export default function ReturnsChart({ dates, series }: Props) {
   }, [dates, series, mode]);
 
   const yDomain = useMemo(() => {
-    // Ensure 0-line is always visible.
-    // In % mode, pad all-positive to -10% and all-negative to +10% (symmetric).
-    if (mode === '%') {
-      const minWithZero = Math.min(min, 0);
-      const maxWithZero = Math.max(max, 0);
-      if (max <= 0) {
-        // Entire range <= 0 → extend top to +10%
-        return [minWithZero, Math.max(10, maxWithZero)];
-      }
-      if (min >= 0) {
-        // Entire range >= 0 → extend bottom to -10%
-        return [Math.min(-10, minWithZero), maxWithZero];
-      }
-      return [minWithZero, maxWithZero];
+    // Place 0 at p=0.1 from bottom with asymmetric limits.
+    // (0 - yMin) / (yMax - yMin) = p ⇒ yMax = R * (-yMin), where R = (1-p)/p.
+    const p = 0.1;
+    const R = (1 - p) / p; // 9 when p = 0.1
+    const minData = min;
+    const maxData = max;
+    // All-zero data: enforce minimal range (no extra padding otherwise)
+    if (minData === 0 && maxData === 0) {
+      const a = 1; // 1 unit (1% in % mode, $1 in $ mode)
+      return [-a, R * a];
     }
-    // $ mode: just include 0 without extra padding
-    return [Math.min(0, min), Math.max(0, max)];
-  }, [min, max, mode]);
+    const aFromNeg = Math.max(-minData, 0);
+    const aFromPos = Math.max(maxData, 0) / R;
+    const a = Math.max(aFromNeg, aFromPos);
+    return [-a, R * a];
+  }, [min, max]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (
