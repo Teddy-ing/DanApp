@@ -91,14 +91,14 @@ export default function ReturnsShell() {
           )}
           <div>
             {!leftOpen && (
-              <div className="flex items-center justify-end mb-2">
+              <div className="flex items-center justify-start mb-2">
                 <button
                   type="button"
                   onClick={() => toggleLeftOpen(true)}
-                  className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-black/10 dark:border-white/15 bg-white/90 dark:bg-neutral-900/90 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-neutral-900"
                 >
-                  Show panel
                   <span className="text-base leading-none">›</span>
+                  Show panel
                 </button>
               </div>
             )}

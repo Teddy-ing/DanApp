@@ -68,13 +68,13 @@ export default function DividendsPanel(props: { symbols: string[]; horizon: Hori
         >
           {open ? (
             <>
-              <span className="text-base leading-none">‹</span>
+              <span className="text-base leading-none">▴</span>
               Hide
             </>
           ) : (
             <>
               Show
-              <span className="text-base leading-none">›</span>
+              <span className="text-base leading-none">▾</span>
             </>
           )}
         </button>
