@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 type Horizon = "5y" | "max";
@@ -40,50 +40,88 @@ export default function DividendsPanel(props: { symbols: string[]; horizon: Hori
     setExpandedSymbols((prev) => ({ ...prev, [symbol]: !prev[symbol] }));
   };
 
+  // Collapsible panel state with localStorage persistence
+  const [open, setOpen] = useState<boolean>(true);
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('ui.dividends.open') : null;
+      if (stored === 'true' || stored === 'false') {
+        setOpen(stored === 'true');
+      }
+    } catch {}
+  }, []);
+  const setOpenAndPersist = (next: boolean) => {
+    setOpen(next);
+    try {
+      if (typeof window !== 'undefined') window.localStorage.setItem('ui.dividends.open', String(next));
+    } catch {}
+  };
+
   return (
     <section className="w-full rounded-xl border border-black/10 dark:border-white/15 p-4 sm:p-5 bg-white dark:bg-neutral-900">
-      <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium">Dividends</h3>
-        {dividendsQuery.isLoading && <div className="text-sm">Loading…</div>}
-        {dividendsQuery.error && (
-          <div className="text-sm text-red-600 dark:text-red-400">{(dividendsQuery.error as Error).message}</div>
-        )}
-        {dividendsQuery.isSuccess && dividendsQuery.data.items.length === 0 && (
-          <div className="text-sm text-gray-600 dark:text-gray-400">No dividends in range.</div>
-        )}
-        {dividendsQuery.isSuccess && dividendsQuery.data.items.length > 0 && (
-          <div className="space-y-3">
-            {dividendsQuery.data.items.map((item) => {
-              const sorted = [...(item.dividends || [])].sort((a, b) => String(b.dateIso).localeCompare(String(a.dateIso)));
-              const isExpanded = Boolean(expandedSymbols[item.symbol]);
-              const visible = isExpanded ? sorted : sorted.slice(0, 20);
-              const hasMore = sorted.length > 20;
-              return (
-                <div key={item.symbol}>
-                  <div className="text-sm mb-1">{item.symbol}</div>
-                  <ul className="text-sm text-gray-700 dark:text-gray-300">
-                    {visible.map((d) => (
-                      <li key={`${item.symbol}-${d.dateIso}-${d.amount}`} className="flex items-center justify-between py-0.5">
-                        <span>{d.dateIso}</span>
-                        <span>{usdFormatter.format(d.amount)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {hasMore && (
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(item.symbol)}
-                      className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      {isExpanded ? "Show less" : `Show more (${sorted.length - 20} more)`}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setOpenAndPersist(!open)}
+          className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:underline"
+        >
+          {open ? (
+            <>
+              <span className="text-base leading-none">‹</span>
+              Hide
+            </>
+          ) : (
+            <>
+              Show
+              <span className="text-base leading-none">›</span>
+            </>
+          )}
+        </button>
       </div>
+      {open && (
+        <div className="mt-3 flex flex-col gap-3">
+          {dividendsQuery.isLoading && <div className="text-sm">Loading…</div>}
+          {dividendsQuery.error && (
+            <div className="text-sm text-red-600 dark:text-red-400">{(dividendsQuery.error as Error).message}</div>
+          )}
+          {dividendsQuery.isSuccess && dividendsQuery.data.items.length === 0 && (
+            <div className="text-sm text-gray-600 dark:text-gray-400">No dividends in range.</div>
+          )}
+          {dividendsQuery.isSuccess && dividendsQuery.data.items.length > 0 && (
+            <div className="space-y-3">
+              {dividendsQuery.data.items.map((item) => {
+                const sorted = [...(item.dividends || [])].sort((a, b) => String(b.dateIso).localeCompare(String(a.dateIso)));
+                const isExpanded = Boolean(expandedSymbols[item.symbol]);
+                const visible = isExpanded ? sorted : sorted.slice(0, 20);
+                const hasMore = sorted.length > 20;
+                return (
+                  <div key={item.symbol}>
+                    <div className="text-sm mb-1">{item.symbol}</div>
+                    <ul className="text-sm text-gray-700 dark:text-gray-300">
+                      {visible.map((d) => (
+                        <li key={`${item.symbol}-${d.dateIso}-${d.amount}`} className="flex items-center justify-between py-0.5">
+                          <span>{d.dateIso}</span>
+                          <span>{usdFormatter.format(d.amount)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {hasMore && (
+                      <button
+                        type="button"
+                        onClick={() => toggleExpanded(item.symbol)}
+                        className="mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {isExpanded ? "Show less" : `Show more (${sorted.length - 20} more)`}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

@@ -19,16 +19,7 @@ export default function ReturnsView(props: {
   const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
   const enabled = symbols.length > 0;
 
-  const amountDisplay = useMemo(
-    () =>
-      new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        minimumFractionDigits: Number.isInteger(base) ? 0 : 2,
-        maximumFractionDigits: Number.isInteger(base) ? 0 : 2,
-      }).format(base),
-    [base],
-  );
+  const amountDisplay = useMemo(() => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(base), [base]);
   const symbolsDisplay = useMemo(() => symbols.join(", "), [symbols]);
 
   const returnsQuery = useQuery({
@@ -60,6 +51,7 @@ export default function ReturnsView(props: {
     queryKey: ["prices", { symbols, horizon, custom }],
     enabled: returnsQuery.isSuccess,
     queryFn: async () => {
+      await new Promise((r) => setTimeout(r, 800));
       const params = new URLSearchParams();
       params.set("symbols", symbols.join(","));
       params.set("range", horizon);
@@ -91,19 +83,19 @@ export default function ReturnsView(props: {
       </div>
       {returnsQuery.isSuccess && (
         <div className="mb-6">
-          <div className="text-sm mb-2">Returns from each start date to present (incl. dividends)</div>
-          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
+          <div className="text-sm mb-2">{`Total Return at the present from ${amountDisplay} invested ${symbols.length > 1 ? `in each of ${symbolsDisplay}` : `in ${symbolsDisplay}`} at ${returnsQuery.data.dates[0]}`}</div>
+          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
         </div>
       )}
       {returnsQuery.isSuccess && (
         <div className="mb-6">
-          <div className="text-sm mb-2">Returns from {amountDisplay} in {symbolsDisplay} at {returnsQuery.data.dates[0]}</div>
-          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
+          <div className="text-sm mb-2">Returns from each date shown to the present (including reinvested dividends)</div>
+          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
         </div>
       )}
       {pricesQuery.isSuccess && (
         <div>
-          <div className="text-sm mb-2">Price of {symbolsDisplay}</div>
+          <div className="text-sm mb-2">{symbols.length > 1 ? `Prices of ${symbolsDisplay}` : `Price of ${symbolsDisplay}`}</div>
           <PriceChart
             items={pricesQuery.data.items.map((i) => ({
               symbol: i.symbol,

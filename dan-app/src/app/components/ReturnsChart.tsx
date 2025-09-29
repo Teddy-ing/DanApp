@@ -24,6 +24,7 @@ type Props = {
 
 export default function ReturnsChart({ dates, series }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
+  const zeroLineLabel = mode === '$' ? '$0' : '0%';
 
   const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
 
@@ -157,7 +158,7 @@ export default function ReturnsChart({ dates, series }: Props) {
                 )}
               </>
             )}
-            <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" />
+            <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" label={{ value: zeroLineLabel, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
             <Tooltip
               formatter={(value: ValueType, name: NameType) => {
                 const num = typeof value === 'number' ? value : null;
