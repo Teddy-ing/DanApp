@@ -56,21 +56,24 @@ export default function ReturnsChart({ dates, series }: Props) {
   }, [dates, series, mode]);
 
   const yDomain = useMemo(() => {
-    // Place 0 at p=0.1 from bottom with asymmetric limits.
-    // (0 - yMin) / (yMax - yMin) = p ⇒ yMax = R * (-yMin), where R = (1-p)/p.
+    // Clamped p approach: try to put 0 at p=0.1 from bottom without inflating the top.
     const p = 0.1;
     const R = (1 - p) / p; // 9 when p = 0.1
     const minData = min;
     const maxData = max;
-    // All-zero data: enforce minimal range (no extra padding otherwise)
     if (minData === 0 && maxData === 0) {
-      const a = 1; // 1 unit (1% in % mode, $1 in $ mode)
+      const a = 1; // minimal range
       return [-a, R * a];
     }
-    const aFromNeg = Math.max(-minData, 0);
-    const aFromPos = Math.max(maxData, 0) / R;
-    const a = Math.max(aFromNeg, aFromPos);
-    return [-a, R * a];
+    // Keep yMax anchored to data; only deepen yMin as needed.
+    const yMax = maxData;
+    const yMinCandidate = -yMax / R;
+    if (minData >= yMinCandidate) {
+      // Can keep 0 at exactly p
+      return [yMinCandidate, yMax];
+    }
+    // Negative data exceeds candidate; include it and accept 0 above p.
+    return [minData, yMax];
   }, [min, max]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
@@ -104,27 +107,55 @@ export default function ReturnsChart({ dates, series }: Props) {
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
-            {hasDomain && max > 0 && (
-              <ReferenceArea
-                y1={0}
-                y2={yDomain[1]}
-                x1={xMin}
-                x2={xMax}
-                fill="#16a34a"
-                fillOpacity={0.2}
-                strokeOpacity={0}
-              />
-            )}
-            {hasDomain && min < 0 && (
-              <ReferenceArea
-                y1={yDomain[0]}
-                y2={0}
-                x1={xMin}
-                x2={xMax}
-                fill="#dc2626"
-                fillOpacity={0.18}
-                strokeOpacity={0}
-              />
+            {hasDomain && (
+              <>
+                {yDomain[1] <= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#dc2626"
+                    fillOpacity={0.18}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : yDomain[0] >= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#16a34a"
+                    fillOpacity={0.2}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : (
+                  <>
+                    <ReferenceArea
+                      y1={0}
+                      y2={yDomain[1]}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#16a34a"
+                      fillOpacity={0.2}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                    <ReferenceArea
+                      y1={yDomain[0]}
+                      y2={0}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#dc2626"
+                      fillOpacity={0.18}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                  </>
+                )}
+              </>
             )}
             <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" />
             <Tooltip

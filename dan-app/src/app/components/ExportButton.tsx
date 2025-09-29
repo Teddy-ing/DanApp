@@ -53,7 +53,7 @@ export default function ExportButton() {
       disabled={downloading}
       title="Export current view to Excel"
     >
-      {downloading ? 'Exporting…' : 'Export to Excel'}
+      {downloading ? 'Exporting…' : 'Export to Excela'}
     </button>
   );
 }

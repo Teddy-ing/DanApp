@@ -72,13 +72,15 @@ export default function ForwardReturnsChart({ dates, series, base }: Props) {
     const minData = min;
     const maxData = max;
     if (minData === 0 && maxData === 0) {
-      const a = 1;
+      const a = 1; // minimal range
       return [-a, R * a];
     }
-    const aFromNeg = Math.max(-minData, 0);
-    const aFromPos = Math.max(maxData, 0) / R;
-    const a = Math.max(aFromNeg, aFromPos);
-    return [-a, R * a];
+    const yMax = maxData;
+    const yMinCandidate = -yMax / R;
+    if (minData >= yMinCandidate) {
+      return [yMinCandidate, yMax];
+    }
+    return [minData, yMax];
   }, [min, max]);
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
@@ -113,27 +115,55 @@ export default function ForwardReturnsChart({ dates, series, base }: Props) {
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
-            {hasDomain && max > 0 && (
-              <ReferenceArea
-                y1={0}
-                y2={yDomain[1]}
-                x1={xMin}
-                x2={xMax}
-                fill="#16a34a"
-                fillOpacity={0.2}
-                strokeOpacity={0}
-              />
-            )}
-            {hasDomain && min < 0 && (
-              <ReferenceArea
-                y1={yDomain[0]}
-                y2={0}
-                x1={xMin}
-                x2={xMax}
-                fill="#dc2626"
-                fillOpacity={0.18}
-                strokeOpacity={0}
-              />
+            {hasDomain && (
+              <>
+                {yDomain[1] <= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#dc2626"
+                    fillOpacity={0.10}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : yDomain[0] >= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#16a34a"
+                    fillOpacity={0.10}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : (
+                  <>
+                    <ReferenceArea
+                      y1={0}
+                      y2={yDomain[1]}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#16a34a"
+                      fillOpacity={0.10}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                    <ReferenceArea
+                      y1={yDomain[0]}
+                      y2={0}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#dc2626"
+                      fillOpacity={0.10}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                  </>
+                )}
+              </>
             )}
             <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" />
             <Tooltip
