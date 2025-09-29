@@ -18,7 +18,7 @@ export default function ReturnsShell() {
     <div className="w-full px-4">
       {!hasQuery ? (
         <div className="max-w-md mx-auto">
-          <InputsPanel onFetch={({ symbols, base, horizon, custom }) => {
+          <InputsPanel initialSymbols={symbols} initialBase={base} initialHorizon={horizon} initialCustom={custom} onFetch={({ symbols, base, horizon, custom }) => {
             setSymbols(symbols);
             setBase(base);
             setHorizon(horizon);
@@ -35,7 +35,7 @@ export default function ReturnsShell() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8">
           <div>
             <div>
-              <InputsPanel onFetch={({ symbols, base, horizon, custom }) => {
+              <InputsPanel initialSymbols={symbols} initialBase={base} initialHorizon={horizon} initialCustom={custom} onFetch={({ symbols, base, horizon, custom }) => {
                 setSymbols(symbols);
                 setBase(base);
                 setHorizon(horizon);
@@ -66,5 +66,6 @@ export default function ReturnsShell() {
     </div>
   );
 }
+
 
 

@@ -5,14 +5,14 @@ import { validateUsTickerFormat } from '@/lib/ticker';
 
 type Horizon = '5y' | 'max';
 
-export default function InputsPanel(props: { onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void; onStats?: (args: { symbols: string[]; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
-  const { onFetch, onStats } = props;
-  const [symbols, setSymbols] = useState<string[]>([]);
+export default function InputsPanel(props: { initialSymbols?: string[]; initialBase?: number; initialHorizon?: Horizon; initialCustom?: { enabled: boolean; start: string; end: string }; onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void; onStats?: (args: { symbols: string[]; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
+  const { initialSymbols = [], initialBase = 1000, initialHorizon = '5y', initialCustom = { enabled: false, start: '', end: '' }, onFetch, onStats } = props;
+  const [symbols, setSymbols] = useState<string[]>(initialSymbols);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [base, setBase] = useState<number>(1000);
-  const [horizon, setHorizon] = useState<Horizon>('5y');
-  const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>({ enabled: false, start: '', end: '' });
+  const [base, setBase] = useState<number>(initialBase);
+  const [horizon, setHorizon] = useState<Horizon>(initialHorizon);
+  const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>(initialCustom);
 
   const canAddMore = symbols.length < 5;
 
@@ -251,4 +251,5 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
     </section>
   );
 }
+
 

@@ -116,7 +116,7 @@ export default function ReturnsChart({ dates, series }: Props) {
                     x1={xMin}
                     x2={xMax}
                     fill="#dc2626"
-                    fillOpacity={0.18}
+                    fillOpacity={0.10}
                     strokeOpacity={0}
                     ifOverflow="visible"
                   />
@@ -127,7 +127,7 @@ export default function ReturnsChart({ dates, series }: Props) {
                     x1={xMin}
                     x2={xMax}
                     fill="#16a34a"
-                    fillOpacity={0.2}
+                    fillOpacity={0.10}
                     strokeOpacity={0}
                     ifOverflow="visible"
                   />
@@ -139,7 +139,7 @@ export default function ReturnsChart({ dates, series }: Props) {
                       x1={xMin}
                       x2={xMax}
                       fill="#16a34a"
-                      fillOpacity={0.2}
+                      fillOpacity={0.10}
                       strokeOpacity={0}
                       ifOverflow="visible"
                     />
@@ -149,7 +149,7 @@ export default function ReturnsChart({ dates, series }: Props) {
                       x1={xMin}
                       x2={xMax}
                       fill="#dc2626"
-                      fillOpacity={0.18}
+                      fillOpacity={0.10}
                       strokeOpacity={0}
                       ifOverflow="visible"
                     />
