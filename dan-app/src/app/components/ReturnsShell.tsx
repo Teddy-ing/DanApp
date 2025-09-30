@@ -56,20 +56,23 @@ export default function ReturnsShell() {
           }} />
         </div>
       ) : (
-        <div className={`max-w-7xl mx-auto grid grid-cols-1 ${leftOpen ? 'md:grid-cols-[320px_1fr]' : 'md:grid-cols-1'} gap-8`}>
-          {leftOpen && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div />
-                <button
-                  type="button"
-                  onClick={() => toggleLeftOpen(false)}
-                  className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:underline"
-                >
-                  <span className="text-base leading-none">‹</span>
-                  Hide panel
-                </button>
-              </div>
+        <div className={"max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8"}>
+          <div
+            className="relative min-w-0 overflow-hidden transition-[width] duration-300 ease-in-out"
+            style={{ width: leftOpen ? 320 : 12 }}
+          >
+            <div className={`flex items-center justify-between mb-2 transition-all duration-300 ease-in-out ${leftOpen ? '' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+              <div />
+              <button
+                type="button"
+                onClick={() => toggleLeftOpen(false)}
+                className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:underline"
+              >
+                <span className="text-base leading-none">‹</span>
+                Hide panel
+              </button>
+            </div>
+            <div className={`transition-all duration-300 ease-in-out ${leftOpen ? '' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
               <InputsPanel initialSymbols={symbols} initialBase={base} initialHorizon={horizon} initialCustom={custom} onFetch={({ symbols, base, horizon, custom }) => {
                 setSymbols(symbols);
                 setBase(base);
@@ -88,7 +91,7 @@ export default function ReturnsShell() {
                 </div>
               )}
             </div>
-          )}
+          </div>
           <div>
             {!leftOpen && (
               <div className="flex items-center justify-start mb-2">

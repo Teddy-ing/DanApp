@@ -161,10 +161,9 @@ Recharts multi-line chart with $ and % view toggle
   - Baseline label: 0-line label is displayed on the left side of the chart.
 
 UX toggles
-- Left panel (Symbols/Inputs + Dividends) supports a master collapse with chevron + “Hide/Show” text. Defaults: open on desktop (md+), closed on mobile. State persists via localStorage (`ui.leftPanel.open`).
-- Dividends card is individually collapsible with chevron + “Hide/Show”; state persists via localStorage (`ui.dividends.open`).
-  - Chevron shows ▴ when open and ▾ when closed.
-  - When the left panel is collapsed, the “Show panel” control appears on the left as a small button.
+- Left panel (Symbols/Inputs + Dividends) supports a master collapse with chevron + “Hide/Show” text. Defaults: open on desktop (md+), closed on mobile. State persists via localStorage (`ui.leftPanel.open`). The panel remains mounted; width animates from 320px to a slim 12px gutter for smooth chart resizing.
+- Dividends card is individually collapsible with chevron + “Hide/Show”; state persists via localStorage (`ui.dividends.open`). Chevron shows ▴ when open and ▾ when closed.
+- When the left panel is collapsed, the “Show panel” control appears on the left as a small button.
 
 Tooltip: date + per-symbol $ and %; optional markers for dividend reinvests (later)
 
