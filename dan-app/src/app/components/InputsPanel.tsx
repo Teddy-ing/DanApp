@@ -183,18 +183,21 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                   if (!symbols.includes(normalized)) {
                     if (symbols.length >= 5) {
                       setError('Maximum of 5 symbols');
+                      return; // Do not clear input or proceed
                     } else {
                       nextSymbols = [...symbols, normalized];
                       setSymbols(nextSymbols);
                       setError(null);
+                      setInput('');
                     }
                   } else {
                     setError(null);
+                    setInput('');
                   }
-                  setInput('');
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'Invalid ticker';
                   setError(msg);
+                  return; // Do not proceed on validation error
                 }
               }
               if (nextSymbols.length > 0) {
@@ -219,18 +222,21 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                   if (!symbols.includes(normalized)) {
                     if (symbols.length >= 5) {
                       setError('Maximum of 5 symbols');
+                      return; // Do not clear input or proceed
                     } else {
                       nextSymbols = [...symbols, normalized];
                       setSymbols(nextSymbols);
                       setError(null);
+                      setInput('');
                     }
                   } else {
                     setError(null);
+                    setInput('');
                   }
-                  setInput('');
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'Invalid ticker';
                   setError(msg);
+                  return; // Do not proceed on validation error
                 }
               }
               if (nextSymbols.length > 0) {

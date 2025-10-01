@@ -51,7 +51,6 @@ export default function ReturnsView(props: {
     queryKey: ["prices", { symbols, horizon, custom }],
     enabled: returnsQuery.isSuccess,
     queryFn: async () => {
-      await new Promise((r) => setTimeout(r, 800));
       const params = new URLSearchParams();
       params.set("symbols", symbols.join(","));
       params.set("range", horizon);
