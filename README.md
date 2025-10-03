@@ -33,7 +33,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Returns/Price charts now include labels:
   - Returns chart: "Returns from {amount} in {symbols} at {starting point}" where amount is USD-formatted, symbols are comma-joined, and starting point is the first date of the series.
   - Price chart: "Price of {symbols}" using the same symbol display.
-  - Implemented in `src/app/components/ReturnsView.tsx`.
+- Implemented in `src/app/components/ReturnsView.tsx`.
+- Chart order updated: Forward Returns, Returns, then Price.
 
 ### Front page (marketing)
 
