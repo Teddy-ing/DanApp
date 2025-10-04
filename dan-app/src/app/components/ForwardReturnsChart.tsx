@@ -87,7 +87,7 @@ export default function ForwardReturnsChart({ dates, series, base }: Props) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 print:hidden">
         <div className="text-sm text-gray-700 dark:text-gray-300">Toggle</div>
         <div className="inline-flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
           <button

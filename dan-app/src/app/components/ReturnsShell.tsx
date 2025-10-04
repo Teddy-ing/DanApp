@@ -38,6 +38,8 @@ export default function ReturnsShell() {
     } catch {}
   };
 
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
   return (
     <div className="w-full px-4">
       {!hasQuery ? (
@@ -93,7 +95,7 @@ export default function ReturnsShell() {
             </div>
           </div>
           <div>
-            {!leftOpen && (
+            {!leftOpen && !lightboxOpen && (
               <div className="flex items-center justify-start mb-2">
                 <button
                   type="button"
@@ -106,7 +108,7 @@ export default function ReturnsShell() {
               </div>
             )}
             {view === 'returns' ? (
-              <ReturnsView symbols={symbols} base={base} horizon={horizon} custom={custom} />
+              <ReturnsView symbols={symbols} base={base} horizon={horizon} custom={custom} onLightboxOpenChange={setLightboxOpen} />
             ) : (
               <StatsPanel symbols={symbols} horizon={horizon} custom={custom} />
             )}

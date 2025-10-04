@@ -36,6 +36,12 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Implemented in `src/app/components/ReturnsView.tsx`.
 - Chart order updated: Forward Returns, Returns, then Price.
 
+### Lightbox (chart enlarge, print)
+
+- Double-click any chart to open a full-screen lightbox overlay.
+- Interactions: left-click toggles zoom (1x/2x), wheel zoom adjusts smoothly, drag to pan, double-click background resets, Esc or backdrop click closes.
+- Print button in the top-right prints the enlarged chart (title/subtitle/legend are included; overlay controls are hidden in print).
+
 ### Front page (marketing)
 
 - Concept A implemented for unauthenticated users: text-first hero, blue/indigo accents, single primary CTA (Google sign-in), usage-based free tier note.

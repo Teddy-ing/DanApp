@@ -80,7 +80,7 @@ export default function ReturnsChart({ dates, series }: Props) {
 
   return (
     <div className="w-full">
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 print:hidden">
         <div className="inline-flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
           <button
             type="button"
