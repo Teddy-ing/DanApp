@@ -10,52 +10,84 @@ import {
   Legend,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ForwardReturnsChart(props: { dates: string[]; series: Series[]; base?: number }) {
+type Props = {
+  dates: string[];
+  series: Series[];
+  base?: number;
+};
+
+export default function ForwardReturnsChart({ dates, series, base }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
+  const zeroLineLabel = mode === '$' ? '$0' : '0%';
 
-  const palette = [
-    '#5B8DEF',
-    '#E66E6E',
-    '#6DD3A8',
-    '#F5C26B',
-    '#B388EB',
-  ];
+  const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
 
-  const data = useMemo(() => {
+  const { data, min, max, xMin, xMax } = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
-    const lastIndex = props.dates.length - 1;
-    if (lastIndex < 0) return rows;
+    let min = 0;
+    let max = 0;
+    const lastIndex = dates.length - 1;
+    if (lastIndex < 0) {
+      return { data: rows, min, max, xMin: undefined, xMax: undefined };
+    }
 
-    // Build rows where each row reflects return from that start date to the final date
-    for (let i = 0; i < props.dates.length; i += 1) {
-      const row: Record<string, number | string | null> = { date: props.dates[i] };
-      for (const s of props.series) {
+    for (let i = 0; i < dates.length; i += 1) {
+      const row: Record<string, number | string | null> = { date: dates[i] };
+      for (const s of series) {
         const startVal = s.value[i];
         const endVal = s.value[lastIndex];
         if (startVal == null || endVal == null || startVal === 0) {
           row[s.symbol] = null;
           continue;
         }
-        if (mode === '$') {
-          const base = typeof props.base === 'number' && isFinite(props.base) ? props.base : 1000;
-          row[s.symbol] = base * (endVal / startVal - 1);
-        } else {
-          row[s.symbol] = ((endVal / startVal) - 1) * 100;
+        const baseAmount = typeof base === 'number' && Number.isFinite(base) ? base : 1000;
+        const rawReturn = endVal / startVal - 1;
+        const nextVal = mode === '$' ? baseAmount * rawReturn : rawReturn * 100;
+        const isFiniteNumber = typeof nextVal === 'number' && Number.isFinite(nextVal);
+        row[s.symbol] = isFiniteNumber ? nextVal : null;
+        if (isFiniteNumber) {
+          const value = nextVal as number;
+          if (value < min) min = value;
+          if (value > max) max = value;
         }
       }
       rows.push(row);
     }
-    return rows;
-  }, [props.dates, props.series, mode, props.base]);
+
+    const xMin = rows[0]?.date as string | undefined;
+    const xMax = rows[rows.length - 1]?.date as string | undefined;
+
+    return { data: rows, min, max, xMin, xMax };
+  }, [dates, series, base, mode]);
+
+  const yDomain = useMemo(() => {
+    const p = 0.1;
+    const R = (1 - p) / p;
+    const minData = min;
+    const maxData = max;
+    if (minData === 0 && maxData === 0) {
+      const a = 1; // minimal range
+      return [-a, R * a];
+    }
+    const yMax = maxData;
+    const yMinCandidate = -yMax / R;
+    if (minData >= yMinCandidate) {
+      return [yMinCandidate, yMax];
+    }
+    return [minData, yMax];
+  }, [min, max]);
+  const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 print:hidden">
         <div className="text-sm text-gray-700 dark:text-gray-300">Toggle</div>
         <div className="inline-flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
           <button
@@ -81,9 +113,60 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
             <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={32} />
             <YAxis
               tick={{ fontSize: 12 }}
-              domain={["auto", "auto"]}
+              domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
+            {hasDomain && (
+              <>
+                {yDomain[1] <= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#dc2626"
+                    fillOpacity={0.10}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : yDomain[0] >= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#16a34a"
+                    fillOpacity={0.10}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : (
+                  <>
+                    <ReferenceArea
+                      y1={0}
+                      y2={yDomain[1]}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#16a34a"
+                      fillOpacity={0.10}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                    <ReferenceArea
+                      y1={yDomain[0]}
+                      y2={0}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#dc2626"
+                      fillOpacity={0.10}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                  </>
+                )}
+              </>
+            )}
+            <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" label={{ value: zeroLineLabel, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
             <Tooltip
               formatter={(value: ValueType, name: NameType) => {
                 const num = typeof value === 'number' ? value : null;
@@ -93,13 +176,13 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
               labelFormatter={(label) => `${label}`}
             />
             <Legend />
-            {props.series.map((s, i) => (
+            {series.map((s, index) => (
               <Line
                 key={s.symbol}
                 type="monotone"
                 dataKey={s.symbol}
                 dot={false}
-                stroke={palette[i % palette.length]}
+                stroke={palette[index % palette.length]}
                 strokeWidth={2}
                 isAnimationActive={false}
                 connectNulls
@@ -111,5 +194,3 @@ export default function ForwardReturnsChart(props: { dates: string[]; series: Se
     </div>
   );
 }
-
-

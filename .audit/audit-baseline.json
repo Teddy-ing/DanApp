@@ -1,0 +1,64 @@
+{
+  "findings": [
+    {
+      "issue_id": "534b3cc9c1053e4e03bad51dfa9bc6f52091e6079198ab41d63013a4b8cfdff6",
+      "file": "dan-app/src/app/api/export/xlsx/route.ts",
+      "lines": "227-271",
+      "smell_type": "Security",
+      "why": "Content-Disposition filename used raw symbols from the request, so attackers could inject CRLF and additional headers.",
+      "risk": "security",
+      "severity": "high",
+      "confidence": "high",
+      "evidence": [
+        {
+          "type": "spec_citation",
+          "ref": "OWASP HTTP Response Splitting",
+          "url": "https://owasp.org/www-community/attacks/HTTP_Response_Splitting",
+          "quote": "Unvalidated input in HTTP headers can lead to HTTP Response Splitting attacks, enabling header injection and cache poisoning."
+        }
+      ],
+      "minimal_fix_patch": "diff --git a-dan-app/src/app/api/export/xlsx/route.ts b-dan-app/src/app/api/export/xlsx/route.ts\n@@\n-  const filename = `${symbols.join(', ')} ${nyToday} returns.xlsx`;\n+  const filename = buildAttachmentFilename(symbols, nyToday);\n",
+      "est_complexity_change": "+12 LOC"
+    },
+    {
+      "issue_id": "1a60184768054e76b84ba1acd8ab620070a1de1a3eac461eb9bc3d645f44c09b",
+      "file": "dan-app/src/app/api/export/xlsx/route.ts",
+      "lines": "100-220",
+      "smell_type": "Correctness",
+      "why": "Worksheet names were derived directly from user-provided symbols, which can include characters Excel prohibits, causing ExcelJS to throw and abort responses.",
+      "risk": "correctness",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": [
+        {
+          "type": "spec_citation",
+          "ref": "Microsoft Support - Rename a worksheet",
+          "url": "https://support.microsoft.com/en-us/office/rename-a-worksheet-4c0b34a2-8c11-4b62-8ad7-7a5b5022a945",
+          "quote": "Worksheet names cannot contain the characters : \\ / ? * [ ] and must be 31 characters or less."
+        }
+      ],
+      "minimal_fix_patch": "diff --git a-dan-app/src/app/api/export/xlsx/route.ts b-dan-app/src/app/api/export/xlsx/route.ts\n@@\n-  for (const s of perSymbol) {\n-    const sheetName = s.symbol.substring(0, 31);\n-    const ws = wb.addWorksheet(sheetName);\n+  const sheetNameState: SheetNameState = { used: new Set<string>(), baseCounts: new Map<string, number>() };\n+  const workbookSymbols = perSymbol.map((entry) => ({\n+    ...entry,\n+    sheetName: nextWorksheetName(entry.symbol, sheetNameState),\n+  }));\n+  for (const s of workbookSymbols) {\n+    const ws = wb.addWorksheet(s.sheetName);\n",
+      "est_complexity_change": "+28 LOC"
+    },
+    {
+      "issue_id": "b78881ac485a5f03e8722cb4f10c02e9b203f798d9df666aa290376a83a7c057",
+      "file": "dan-app/src/lib/rateLimit.ts",
+      "lines": "56-80",
+      "smell_type": "Security",
+      "why": "Rate limiting trusted the x-user-id header so any client could spoof a new identity per request and bypass limits.",
+      "risk": "security",
+      "severity": "medium",
+      "confidence": "high",
+      "evidence": [
+        {
+          "type": "spec_citation",
+          "ref": "OWASP API Security Top 10 2023 - API4 Unrestricted Resource Consumption",
+          "url": "https://owasp.org/API-Security/editions/2023/en/0xa4-2023-Unrestricted-Resource-Consumption/",
+          "quote": "Rate limiting must be enforced using trustworthy identifiers; relying on client-controlled headers allows trivial evasion."
+        }
+      ],
+      "minimal_fix_patch": "diff --git a-dan-app/src/lib/rateLimit.ts b-dan-app/src/lib/rateLimit.ts\n@@\n-import { isIP } from \"node:net\";\n@@\n-  const key = `rl:${routeKey}:${userKey}:${windowSeconds}`;\n+  const normalizedUserKey = userKey && userKey.trim().length > 0 ? userKey.trim() : \"anon\";\n+  const key = `rl:${routeKey}:${normalizedUserKey}:${windowSeconds}`;\n@@\n-export function extractUserId(headers: Headers): string {\n-  const explicit = headers.get(\"x-user-id\");\n-  if (explicit && explicit.trim().length > 0) return explicit.trim();\n-  const xff = headers.get(\"x-forwarded-for\");\n-  if (xff) {\n-    const ip = xff.split(\",\")[0].trim();\n-    if (isIP(ip)) return ip;\n-  }\n-  return \"anon\";\n-}\n+\n+diff --git a-dan-app/src/app/api/returns/route.ts b-dan-app/src/app/api/returns/route.ts\n@@\n-import { checkRateLimit, extractUserId } from \"@/lib/rateLimit\";\n+import { checkRateLimit } from \"@/lib/rateLimit\";\n@@\n-  const { allowed, retryAfterSeconds } = await checkRateLimit(\n-    \"returns\",\n-    extractUserId(req.headers)\n-  );\n+  const { allowed, retryAfterSeconds } = await checkRateLimit(\n+    \"returns\",\n+    `user:${userId}`\n+  );\n+diff --git a-dan-app/src/app/api/prices/route.ts b-dan-app/src/app/api/prices/route.ts\n@@\n-import { checkRateLimit, extractUserId } from \"@/lib/rateLimit\";\n+import { checkRateLimit } from \"@/lib/rateLimit\";\n@@\n-  const { allowed, retryAfterSeconds } = await checkRateLimit(\n-    \"prices\",\n-    extractUserId(req.headers)\n-  );\n+  const { allowed, retryAfterSeconds } = await checkRateLimit(\n+    \"prices\",\n+    `user:${userId}`\n+  );\n+diff --git a-dan-app/src/app/api/stats/route.ts b-dan-app/src/app/api/stats/route.ts\n@@\n-import { checkRateLimit, extractUserId } from \"@/lib/rateLimit\";\n+import { checkRateLimit } from \"@/lib/rateLimit\";\n@@\n-  const { allowed, retryAfterSeconds } = await checkRateLimit(\n-    \"stats\",\n-    extractUserId(req.headers)\n-  );\n+  const { allowed, retryAfterSeconds } = await checkRateLimit(\n+    \"stats\",\n+    `user:${userId}`\n+  );\n",
+      "est_complexity_change": "~0 LOC"
+    }
+  ]
+}

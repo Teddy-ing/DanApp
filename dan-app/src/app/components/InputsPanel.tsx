@@ -5,14 +5,14 @@ import { validateUsTickerFormat } from '@/lib/ticker';
 
 type Horizon = '5y' | 'max';
 
-export default function InputsPanel(props: { onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void; onStats?: (args: { symbols: string[]; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
-  const { onFetch, onStats } = props;
-  const [symbols, setSymbols] = useState<string[]>([]);
+export default function InputsPanel(props: { initialSymbols?: string[]; initialBase?: number; initialHorizon?: Horizon; initialCustom?: { enabled: boolean; start: string; end: string }; onFetch: (args: { symbols: string[]; base: number; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void; onStats?: (args: { symbols: string[]; horizon: Horizon; custom: { enabled: boolean; start: string; end: string } }) => void }) {
+  const { initialSymbols = [], initialBase = 1000, initialHorizon = '5y', initialCustom = { enabled: false, start: '', end: '' }, onFetch, onStats } = props;
+  const [symbols, setSymbols] = useState<string[]>(initialSymbols);
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [base, setBase] = useState<number>(1000);
-  const [horizon, setHorizon] = useState<Horizon>('5y');
-  const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>({ enabled: false, start: '', end: '' });
+  const [base, setBase] = useState<number>(initialBase);
+  const [horizon, setHorizon] = useState<Horizon>(initialHorizon);
+  const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>(initialCustom);
 
   const canAddMore = symbols.length < 5;
 
@@ -76,7 +76,7 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
 
   const helperText = useMemo(() => {
     if (error) return error;
-    return 'Enter to add. Max 5 symbols. Format: AAPL, MSFT, BRK-B';
+    return 'Max 5 symbols. Format: AAPL, MSFT, BRK-B. Spaces in between each symbol';
   }, [error]);
 
   function onChangeBase(e: React.ChangeEvent<HTMLInputElement>) {
@@ -174,21 +174,82 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
         <div className="mt-2 flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => { if (symbols.length > 0) { onFetch({ symbols, base, horizon, custom }); if (typeof window !== 'undefined') { window.localStorage.setItem('lastFetchParams', JSON.stringify({ symbols, base, horizon, custom })); } } }}
-            disabled={symbols.length === 0}
+            onClick={() => {
+              let nextSymbols = symbols;
+              const pending = input.trim();
+              if (pending) {
+                try {
+                  const normalized = validateUsTickerFormat(pending);
+                  if (!symbols.includes(normalized)) {
+                    if (symbols.length >= 5) {
+                      setError('Maximum of 5 symbols');
+                      return; // Do not clear input or proceed
+                    } else {
+                      nextSymbols = [...symbols, normalized];
+                      setSymbols(nextSymbols);
+                      setError(null);
+                      setInput('');
+                    }
+                  } else {
+                    setError(null);
+                    setInput('');
+                  }
+                } catch (e) {
+                  const msg = e instanceof Error ? e.message : 'Invalid ticker';
+                  setError(msg);
+                  return; // Do not proceed on validation error
+                }
+              }
+              if (nextSymbols.length > 0) {
+                onFetch({ symbols: nextSymbols, base, horizon, custom });
+                if (typeof window !== 'undefined') { window.localStorage.setItem('lastFetchParams', JSON.stringify({ symbols: nextSymbols, base, horizon, custom })); }
+              }
+            }}
+            disabled={symbols.length === 0 && input.trim().length === 0}
             className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
-            Fetch returns
+            Returns
           </button>
           <button
             type="button"
-            onClick={() => { if (symbols.length > 0 && onStats) { onStats({ symbols, horizon, custom }); if (typeof window !== 'undefined') { window.localStorage.setItem('lastStatsParams', JSON.stringify({ symbols, horizon, custom })); } } }}
-            disabled={symbols.length === 0}
+            onClick={() => {
+              if (!onStats) return;
+              let nextSymbols = symbols;
+              const pending = input.trim();
+              if (pending) {
+                try {
+                  const normalized = validateUsTickerFormat(pending);
+                  if (!symbols.includes(normalized)) {
+                    if (symbols.length >= 5) {
+                      setError('Maximum of 5 symbols');
+                      return; // Do not clear input or proceed
+                    } else {
+                      nextSymbols = [...symbols, normalized];
+                      setSymbols(nextSymbols);
+                      setError(null);
+                      setInput('');
+                    }
+                  } else {
+                    setError(null);
+                    setInput('');
+                  }
+                } catch (e) {
+                  const msg = e instanceof Error ? e.message : 'Invalid ticker';
+                  setError(msg);
+                  return; // Do not proceed on validation error
+                }
+              }
+              if (nextSymbols.length > 0) {
+                onStats({ symbols: nextSymbols, horizon, custom });
+                if (typeof window !== 'undefined') { window.localStorage.setItem('lastStatsParams', JSON.stringify({ symbols: nextSymbols, horizon, custom })); }
+              }
+            }}
+            disabled={symbols.length === 0 && input.trim().length === 0}
             className="inline-flex items-center rounded-md border border-black/10 dark:border-white/15 px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
-            Compute stats
+            Stats
           </button>
-          {symbols.length === 0 && (
+          {symbols.length === 0 && input.trim().length === 0 && (
             <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">Add at least one symbol to enable fetch.</div>
           )}
         </div>
@@ -196,4 +257,5 @@ export default function InputsPanel(props: { onFetch: (args: { symbols: string[]
     </section>
   );
 }
+
 

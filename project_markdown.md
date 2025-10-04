@@ -154,9 +154,16 @@ Compute value[d] = shares * close(d) and pct[d] = (value[d] - base)/base
 If data missing on d → push null for that symbol to keep arrays aligned.
 
 5) UI/UX
-Multi-symbol chip input (max 5); base amount numeric input (default 1000); horizon toggle (5y / max)
+Multi-symbol chip input (max 5); base amount numeric input (default 1000); horizon toggle (5y / max). Input panel keeps current tickers visible after the layout shifts into the two-column view post-query. Charts label the zero baseline as $0 or 0% based on the active mode.
 
 Recharts multi-line chart with $ and % view toggle
+  - Y-axis & tint: target 0 at 10% from the bottom with clamped p (top bound anchored to data; bottom deepens only as needed). Tint regions (green/red) are driven by the current axis domain: if domain is all ≥0 → full green; all ≤0 → full red; otherwise split at 0. This avoids flicker with small date-window shifts.
+  - Baseline label: 0-line label is displayed on the left side of the chart.
+
+UX toggles
+- Left panel (Symbols/Inputs + Dividends) supports a master collapse with chevron + “Hide/Show” text. Defaults: open on desktop (md+), closed on mobile. State persists via localStorage (`ui.leftPanel.open`). The panel remains mounted; width animates from 320px to a slim 12px gutter for smooth chart resizing.
+- Dividends card is individually collapsible with chevron + “Hide/Show”; state persists via localStorage (`ui.dividends.open`). Chevron shows ▴ when open and ▾ when closed.
+- When the left panel is collapsed, the “Show panel” control appears on the left as a small button.
 
 Tooltip: date + per-symbol $ and %; optional markers for dividend reinvests (later)
 
@@ -224,3 +231,4 @@ For informational purposes only. Not investment advice.
 - Footer links placeholders: `/terms`, `/privacy`.
 
 Scraping: respect robots.txt; IR fallback cached 7 days to minimize load.
+

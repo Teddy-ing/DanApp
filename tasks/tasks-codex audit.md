@@ -1,6 +1,6 @@
 # tasks-codex audit
 
-## Smell Audit — Issues Checklist
+## Smell Audit -- Issues Checklist 2.0
 - [x] Duplicate parseSymbols helpers — (dan-app/src/app/api/prices/route.ts:16-28; dan-app/src/app/api/returns/route.ts:23-35; dan-app/src/app/api/dividends/route.ts:18-30) — Maintainability — why: repeated ticker parsing logic across routes.
 - [x] Sequential fetch with sleeps in returns route — (dan-app/src/app/api/returns/route.ts:80-95) — Performance — why: per-symbol delays cause slow responses.
 - [x] Sequential fetch with sleeps in prices route — (dan-app/src/app/api/prices/route.ts:73-80) — Performance — why: artificial delays for rate limiting.
@@ -13,13 +13,17 @@
 - [x] Monolithic export workbook handler — (dan-app/src/app/api/export/xlsx/route.ts:11-190+) — Maintainability — why: single large function hard to test.
 
 ## Codebase Issues
+- [x] Export workbook uses raw ticker for worksheet name -- (dan-app/src/app/api/export/xlsx/route.ts:100-220) -- Correctness -- why: Excel rejects names with /:*?[] causing handler to fail.
 - [x] InputsPanel.tsx has unused imports and state variables (`useQuery`, `ReturnsChart`, `PriceChart`, `requested`, `setRequested`).
 - [x] page.tsx imports `InputsPanel` but does not use it.
 - [x] No test script configured in `package.json` (`npm test` fails).
 - [x] `npm run build` fails because Next.js cannot fetch fonts `Geist` and `Geist Mono`.
 
 ## Codebase Security Issues
+- [x] Export route Content-Disposition uses raw symbols -- (dan-app/src/app/api/export/xlsx/route.ts:227-271) -- Security -- why: user-controlled filename allowed header injection.
+- [x] Rate limiter trusted x-user-id header -- (dan-app/src/lib/rateLimit.ts:56-80) -- Security -- why: clients could spoof identity to bypass rate limits.
 - [x] `auth.ts` sets `trustHost: true`, trusting forwarded host headers and enabling host header spoofing.
 - [x] `rateLimit.ts` uses `x-forwarded-for` without verification, allowing IP spoofing to bypass rate limits.
 - [x] `prices/route.ts` and `returns/route.ts` disable rate limiting, exposing the server to high-volume request abuse.
 - [x] `dividends/route.ts` accepts user-provided IR base URLs, letting the server fetch arbitrary addresses (SSRF risk).
+
