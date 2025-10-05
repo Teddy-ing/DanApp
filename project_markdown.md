@@ -36,7 +36,7 @@ Let users enter **one–five U.S. stock tickers** and see, for every historical 
 - **Adapters:** `providers/yahoo.ts` (RapidAPI), `scrapers/ir.ts` (Cheerio)  
 - **Core math:** `lib/drip.ts` (pure, unit-tested)  
 - **Cache:** Upstash Redis (global) with TTLs (see §3.3)  
-- **Auth/session:** NextAuth Google; session cookie (or Redis session later if needed)
+- **Auth/session:** NextAuth Google; session cookie (or Redis session later if needed); `/returns` is a protected route
 
 ```mermaid
 flowchart LR
@@ -212,7 +212,7 @@ UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
 Upstash: create Global Redis; copy REST URL/TOKEN
 
 Google Cloud: OAuth consent (External), Web Client with redirect …/api/auth/callback/google
-  Note: App links directly to provider at `/api/auth/signin/google?callbackUrl=/` to skip the generic provider page. The Google OAuth redirect URI in GCP remains `/api/auth/callback/google`.
+  Note: App links directly to provider at `/api/auth/signin/google?callbackUrl=/returns` to skip the generic provider page. The Google OAuth redirect URI in GCP remains `/api/auth/callback/google`.
 
 GitHub Actions: CI (install → test) + deploy to Vercel on main
 
