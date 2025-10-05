@@ -1,12 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { computeDripSeries } from "../drip";
+import type { DailyCandle, DividendEvent, SplitEvent } from "../../providers/yahoo";
 import * as TSLA from "./drip.tsla.fixture";
 import * as NVDA from "./drip.nvda.fixture";
 import * as GOOG from "./drip.goog.fixture";
 import * as AAPL from "./drip.aapl.fixture";
 import * as SPY from "./drip.spy.fixture";
 
-function runSingle(symbol: string, candles: any[], dividends: any[], splits: any[]) {
+function runSingle(symbol: string, candles: DailyCandle[], dividends: DividendEvent[], splits: SplitEvent[]) {
   return computeDripSeries([
     { symbol, candles, dividends, splits },
   ], { base: 1000, horizon: "5y" });
@@ -71,14 +72,14 @@ describe("DRIP multi-symbol checks", () => {
   });
 
   it("AAPL single dividend reinvests at next open to cents", () => {
-    const out = runSingle("AAPL", AAPL.CANDLES, AAPL.DIVIDENDS, AAPL.SPLITS);
-    const expected = expectedSingleDividend(AAPL.DATES, AAPL.CANDLES as any, "2024-08-08", 0.25);
+  const out = runSingle("AAPL", AAPL.CANDLES, AAPL.DIVIDENDS, AAPL.SPLITS);
+  const expected = expectedSingleDividend(AAPL.DATES, AAPL.CANDLES as Array<Pick<DailyCandle,'open'|'close'>>, "2024-08-08", 0.25);
     centsEqual(out.series[0].value.slice(0, AAPL.DATES.length) as number[], expected);
   });
 
   it("SPY single distribution reinvests at next open to cents", () => {
-    const out = runSingle("SPY", SPY.CANDLES, SPY.DIVIDENDS, SPY.SPLITS);
-    const expected = expectedSingleDividend(SPY.DATES, SPY.CANDLES as any, "2024-12-20", 1.00);
+  const out = runSingle("SPY", SPY.CANDLES, SPY.DIVIDENDS, SPY.SPLITS);
+  const expected = expectedSingleDividend(SPY.DATES, SPY.CANDLES as Array<Pick<DailyCandle,'open'|'close'>>, "2024-12-20", 1.00);
     centsEqual(out.series[0].value.slice(0, SPY.DATES.length) as number[], expected);
   });
 });
