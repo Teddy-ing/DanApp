@@ -39,6 +39,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Fix: Removed error-based disabled state so users can retry immediately.
 - Charts: When embedded in the lightbox, `ReturnsChart` and `ForwardReturnsChart` correctly respect `height="full"`.
   - Fix: Top-level wrappers now take 100% height to satisfy `ResponsiveContainer` requirements.
+  - Fix: Y-axis bounds now seed from the first finite data point rather than 0 to avoid incorrect domains when data is entirely positive or negative.
 - Lightbox: Improved click/drag behavior (only left-click toggles zoom), and print layout.
 - Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
 
@@ -47,6 +48,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Double-click any chart to open a full-screen lightbox overlay.
 - Interactions: left-click toggles zoom (1x/2x), wheel zoom adjusts smoothly, drag to pan, double-click background resets, Esc or backdrop click closes.
 - Print button in the top-right prints the enlarged chart (title/subtitle/legend are included; overlay controls are hidden in print).
+- Fix: Lightbox chart wrappers now use `h-full w-full` (non-print) so charts rendered with `height="full"` receive an explicit height from the container and display correctly.
 
 ### Front page (marketing)
 

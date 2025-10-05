@@ -32,11 +32,11 @@ export default function ForwardReturnsChart({ dates, series, base, height }: Pro
 
   const { data, min, max, xMin, xMax } = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
-    let min = 0;
-    let max = 0;
+    let min: number | null = null;
+    let max: number | null = null;
     const lastIndex = dates.length - 1;
     if (lastIndex < 0) {
-      return { data: rows, min, max, xMin: undefined, xMax: undefined };
+      return { data: rows, min: 0, max: 0, xMin: undefined, xMax: undefined };
     }
 
     for (let i = 0; i < dates.length; i += 1) {
@@ -55,8 +55,8 @@ export default function ForwardReturnsChart({ dates, series, base, height }: Pro
         row[s.symbol] = isFiniteNumber ? nextVal : null;
         if (isFiniteNumber) {
           const value = nextVal as number;
-          if (value < min) min = value;
-          if (value > max) max = value;
+          min = min == null ? value : Math.min(min, value);
+          max = max == null ? value : Math.max(max, value);
         }
       }
       rows.push(row);
@@ -65,7 +65,10 @@ export default function ForwardReturnsChart({ dates, series, base, height }: Pro
     const xMin = rows[0]?.date as string | undefined;
     const xMax = rows[rows.length - 1]?.date as string | undefined;
 
-    return { data: rows, min, max, xMin, xMax };
+    const finalMin = min ?? 0;
+    const finalMax = max ?? 0;
+
+    return { data: rows, min: finalMin, max: finalMax, xMin, xMax };
   }, [dates, series, base, mode]);
 
   const yDomain = useMemo(() => {

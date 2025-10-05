@@ -128,17 +128,17 @@ export default function ReturnsView(props: {
       >{(forPrint) => (
         <>
           {lightbox.which === 'forward' && returnsQuery.isSuccess && (
-            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : ''}>
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : 'h-full w-full'}>
               <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} height={'full'} />
             </div>
           )}
           {lightbox.which === 'returns' && returnsQuery.isSuccess && (
-            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : ''}>
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : 'h-full w-full'}>
               <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} height={'full'} />
             </div>
           )}
           {lightbox.which === 'price' && pricesQuery.isSuccess && (
-            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : ''}>
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : 'h-full w-full'}>
               <PriceChart
                 items={pricesQuery.data.items.map((i) => ({
                   symbol: i.symbol,
