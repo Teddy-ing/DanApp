@@ -204,7 +204,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 if (typeof window !== 'undefined') { window.localStorage.setItem('lastFetchParams', JSON.stringify({ symbols: nextSymbols, base, horizon, custom })); }
               }
             }}
-            disabled={(symbols.length === 0 && input.trim().length === 0) || !!error}
+            disabled={(symbols.length === 0 && input.trim().length === 0)}
             className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
             Returns
@@ -241,7 +241,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 if (typeof window !== 'undefined') { window.localStorage.setItem('lastStatsParams', JSON.stringify({ symbols: nextSymbols, horizon, custom })); }
               }
             }}
-            disabled={(symbols.length === 0 && input.trim().length === 0) || !!error}
+            disabled={(symbols.length === 0 && input.trim().length === 0)}
             className="inline-flex items-center rounded-md border border-black/10 dark:border-white/15 px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
             Stats

@@ -35,7 +35,10 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Price chart: "Price of {symbols}" using the same symbol display.
 - Implemented in `src/app/components/ReturnsView.tsx`.
 - Chart order updated: Forward Returns, Returns, then Price.
-- Inputs: Button handlers now validate pending input, block duplicates/over-limit, and disable on errors.
+- Inputs: Button handlers validate pending input and block duplicates/over-limit; buttons no longer stay disabled after a validation error.
+  - Fix: Removed error-based disabled state so users can retry immediately.
+- Charts: When embedded in the lightbox, `ReturnsChart` and `ForwardReturnsChart` correctly respect `height="full"`.
+  - Fix: Top-level wrappers now take 100% height to satisfy `ResponsiveContainer` requirements.
 - Lightbox: Improved click/drag behavior (only left-click toggles zoom), and print layout.
 - Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
 

@@ -80,7 +80,7 @@ export default function ReturnsChart({ dates, series, height }: Props) {
   const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (
-    <div className="w-full">
+    <div className="w-full" style={{ height: height === 'full' ? '100%' : undefined }}>
       <div className="flex items-center gap-2 mb-2 print:hidden">
         <div className="inline-flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
           <button
