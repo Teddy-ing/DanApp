@@ -148,6 +148,9 @@ cash = shares * dividendAmount
 Find next trading day dOpen (skip weekends/holidays)
 
 Execute DRIP at open(dOpen): shares += cash / open(dOpen) (4dp fractional)
+Note: Yahoo chart candles are historically split-adjusted; do not multiply
+shares by split ratios again if prices are already adjusted. Tests enforce
+continuity across split dates.
 
 Compute value[d] = shares * close(d) and pct[d] = (value[d] - base)/base
 

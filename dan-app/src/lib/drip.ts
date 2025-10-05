@@ -232,15 +232,9 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
       }
 
       if (started) {
-        // 1) Apply splits effective on d
-        const splitsToday = p.splitsByDate.get(d);
-        if (splitsToday && splitsToday.length > 0) {
-          for (const s of splitsToday) {
-            if (typeof s.ratio === "number" && isFinite(s.ratio) && s.ratio > 0) {
-              shares = roundShares4(shares * s.ratio);
-            }
-          }
-        }
+        // 1) Splits: prices from Yahoo chart are historically split-adjusted.
+        //    We do NOT multiply shares by split ratios again; doing so would
+        //    double-apply the split and create artificial jumps.
 
         // 2) Execute any pending reinvestment at the next trading-day open when available
         if (pendingCash > 0 && openPrice != null) {

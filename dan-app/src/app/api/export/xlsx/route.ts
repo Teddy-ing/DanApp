@@ -187,7 +187,8 @@ async function buildWorkbook(
       const returnRef = `J${r}`;
 
       ws.getCell(sharesPreRef).value = {
-        formula: isFirst ? `Summary!$B$2/${closeRef}` : `${prevTotalSharesRef}*${splitRef}`,
+        // Prices are split-adjusted; keep shares constant across split rows.
+        formula: isFirst ? `Summary!$B$2/${closeRef}` : `${prevTotalSharesRef}`,
       };
       // Reinvest using previous row's dividend cash at today's open
       ws.getCell(reinvestRef).value = { formula: `IF(${r}=${firstDataRow},0,IFERROR(${prevDivRef}*${prevTotalSharesRef}/${openRef},0))` };
