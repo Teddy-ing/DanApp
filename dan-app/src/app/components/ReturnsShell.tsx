@@ -15,7 +15,8 @@ export default function ReturnsShell() {
   const hasQuery = symbols.length > 0;
 
   // Master left panel open/close state with responsive default and persistence
-  const [leftOpen, setLeftOpen] = useState<boolean>(true);
+  // SSR-safe default (collapsed); hydrate to actual preference after mount
+  const [leftOpen, setLeftOpen] = useState<boolean>(false);
   useEffect(() => {
     try {
       const stored = typeof window !== 'undefined' ? window.localStorage.getItem('ui.leftPanel.open') : null;
@@ -28,8 +29,35 @@ export default function ReturnsShell() {
       setLeftOpen(isMdUp);
     } catch {
       // Fallback to open
-      setLeftOpen(true);
+      setLeftOpen(false);
     }
+  }, []);
+
+  // Respond to window resizes so the panel matches media preference dynamically
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width: 768px)');
+    const onChange = () => {
+      try {
+        const stored = window.localStorage.getItem('ui.leftPanel.open');
+        if (stored === 'true' || stored === 'false') return; // user preference takes precedence
+        setLeftOpen(mq.matches);
+      } catch {}
+    };
+    mq.addEventListener?.('change', onChange);
+    return () => mq.removeEventListener?.('change', onChange);
+  }, []);
+
+  // Reflect external localStorage changes (e.g., other tabs)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'ui.leftPanel.open' && (e.newValue === 'true' || e.newValue === 'false')) {
+        setLeftOpen(e.newValue === 'true');
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
   }, []);
   const toggleLeftOpen = (next: boolean) => {
     setLeftOpen(next);
@@ -59,41 +87,43 @@ export default function ReturnsShell() {
         </div>
       ) : (
         <div className={"max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8"}>
-          <div
-            className="relative min-w-0 overflow-hidden transition-[width] duration-300 ease-in-out"
-            style={{ width: leftOpen ? 320 : 12 }}
-          >
-            <div className={`flex items-center justify-between mb-2 transition-all duration-300 ease-in-out ${leftOpen ? '' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
-              <div />
-              <button
-                type="button"
-                onClick={() => toggleLeftOpen(false)}
-                className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:underline"
-              >
-                <span className="text-base leading-none">‹</span>
-                Hide panel
-              </button>
+          {!lightboxOpen && (
+            <div
+              className="relative min-w-0 overflow-hidden transition-[width] duration-300 ease-in-out"
+              style={{ width: leftOpen ? 320 : 12 }}
+            >
+              <div className={`flex items-center justify-between mb-2 transition-all duration-300 ease-in-out ${leftOpen ? '' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+                <div />
+                <button
+                  type="button"
+                  onClick={() => toggleLeftOpen(false)}
+                  className="inline-flex items-center gap-1 text-xs text-gray-700 dark:text-gray-300 hover:underline"
+                >
+                  <span className="text-base leading-none">‹</span>
+                  Hide panel
+                </button>
+              </div>
+              <div className={`transition-all duration-300 ease-in-out ${leftOpen ? '' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
+                <InputsPanel initialSymbols={symbols} initialBase={base} initialHorizon={horizon} initialCustom={custom} onFetch={({ symbols, base, horizon, custom }) => {
+                  setSymbols(symbols);
+                  setBase(base);
+                  setHorizon(horizon);
+                  setCustom(custom);
+                  setView('returns');
+                }} onStats={({ symbols, horizon, custom }) => {
+                  setSymbols(symbols);
+                  setHorizon(horizon);
+                  setCustom(custom);
+                  setView('stats');
+                }} />
+                {view === 'returns' && (
+                  <div className="mt-4">
+                    <DividendsPanel symbols={symbols} horizon={horizon} custom={custom} />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className={`transition-all duration-300 ease-in-out ${leftOpen ? '' : 'opacity-0 -translate-x-2 pointer-events-none'}`}>
-              <InputsPanel initialSymbols={symbols} initialBase={base} initialHorizon={horizon} initialCustom={custom} onFetch={({ symbols, base, horizon, custom }) => {
-                setSymbols(symbols);
-                setBase(base);
-                setHorizon(horizon);
-                setCustom(custom);
-                setView('returns');
-              }} onStats={({ symbols, horizon, custom }) => {
-                setSymbols(symbols);
-                setHorizon(horizon);
-                setCustom(custom);
-                setView('stats');
-              }} />
-              {view === 'returns' && (
-                <div className="mt-4">
-                  <DividendsPanel symbols={symbols} horizon={horizon} custom={custom} />
-                </div>
-              )}
-            </div>
-          </div>
+          )}
           <div>
             {!leftOpen && !lightboxOpen && (
               <div className="flex items-center justify-start mb-2">

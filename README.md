@@ -35,6 +35,9 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Price chart: "Price of {symbols}" using the same symbol display.
 - Implemented in `src/app/components/ReturnsView.tsx`.
 - Chart order updated: Forward Returns, Returns, then Price.
+- Inputs: Button handlers now validate pending input, block duplicates/over-limit, and disable on errors.
+- Lightbox: Improved click/drag behavior (only left-click toggles zoom), and print layout.
+- Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
 
 ### Lightbox (chart enlarge, print)
 

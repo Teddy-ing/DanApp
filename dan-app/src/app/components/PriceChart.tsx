@@ -6,7 +6,7 @@ import type { Props as LegendContentProps } from 'recharts/types/component/Defau
 
 type Candle = { dateUtcSeconds: number; close: number | null };
 
-export default function PriceChart(props: { items: Array<{ symbol: string; candles: Candle[] }> }) {
+export default function PriceChart(props: { items: Array<{ symbol: string; candles: Candle[] }> ; height?: number | 'full' }) {
   const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
 
   const merged = useMemo(() => {
@@ -40,7 +40,7 @@ export default function PriceChart(props: { items: Array<{ symbol: string; candl
   }, []);
 
   return (
-    <div className="h-[360px] w-full">
+    <div className="w-full" style={{ height: props.height === 'full' ? '100%' : `${(typeof props.height === 'number' ? props.height : 360)}px` }}>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={merged} margin={{ left: 12, right: 12, top: 8, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgb(0 0 0 / 0.06)" />

@@ -29,7 +29,10 @@ function lastDefined<T>(arr: Array<T | null | undefined>): T | null {
 }
 
 function pickClose(c: DailyCandle): number | null {
-  return c.close != null ? c.close : (c.adjClose != null ? c.adjClose : null);
+  const preferred = c.close;
+  const fallback = c.adjClose;
+  const val = preferred != null ? preferred : (fallback != null ? fallback : null);
+  return typeof val === 'number' && Number.isFinite(val) ? val : null;
 }
 
 function computeIntradayVariationPerRow(candles: DailyCandle[]): Array<number | null> {

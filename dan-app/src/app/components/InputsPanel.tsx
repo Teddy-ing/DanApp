@@ -23,8 +23,9 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
       try {
         const normalized = validateUsTickerFormat(trimmed);
         if (symbols.includes(normalized)) {
-          setError(null);
-          return; // dedupe, preserve original order
+          // Duplicate: keep input (so user can edit), set a gentle error, and do nothing
+          setError('Duplicate symbol');
+          return;
         }
         if (!canAddMore) {
           setError('Maximum of 5 symbols');
@@ -180,20 +181,18 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
               if (pending) {
                 try {
                   const normalized = validateUsTickerFormat(pending);
-                  if (!symbols.includes(normalized)) {
-                    if (symbols.length >= 5) {
-                      setError('Maximum of 5 symbols');
-                      return; // Do not clear input or proceed
-                    } else {
-                      nextSymbols = [...symbols, normalized];
-                      setSymbols(nextSymbols);
-                      setError(null);
-                      setInput('');
-                    }
-                  } else {
-                    setError(null);
-                    setInput('');
+                  if (symbols.includes(normalized)) {
+                    setError('Duplicate symbol');
+                    return;
                   }
+                  if (symbols.length >= 5) {
+                    setError('Maximum of 5 symbols');
+                    return;
+                  }
+                  nextSymbols = [...symbols, normalized];
+                  setSymbols(nextSymbols);
+                  setError(null);
+                  setInput('');
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'Invalid ticker';
                   setError(msg);
@@ -205,7 +204,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 if (typeof window !== 'undefined') { window.localStorage.setItem('lastFetchParams', JSON.stringify({ symbols: nextSymbols, base, horizon, custom })); }
               }
             }}
-            disabled={symbols.length === 0 && input.trim().length === 0}
+            disabled={(symbols.length === 0 && input.trim().length === 0) || !!error}
             className="inline-flex items-center rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
             Returns
@@ -219,20 +218,18 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
               if (pending) {
                 try {
                   const normalized = validateUsTickerFormat(pending);
-                  if (!symbols.includes(normalized)) {
-                    if (symbols.length >= 5) {
-                      setError('Maximum of 5 symbols');
-                      return; // Do not clear input or proceed
-                    } else {
-                      nextSymbols = [...symbols, normalized];
-                      setSymbols(nextSymbols);
-                      setError(null);
-                      setInput('');
-                    }
-                  } else {
-                    setError(null);
-                    setInput('');
+                  if (symbols.includes(normalized)) {
+                    setError('Duplicate symbol');
+                    return;
                   }
+                  if (symbols.length >= 5) {
+                    setError('Maximum of 5 symbols');
+                    return; // Do not clear input or proceed
+                  }
+                  nextSymbols = [...symbols, normalized];
+                  setSymbols(nextSymbols);
+                  setError(null);
+                  setInput('');
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'Invalid ticker';
                   setError(msg);
@@ -244,7 +241,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 if (typeof window !== 'undefined') { window.localStorage.setItem('lastStatsParams', JSON.stringify({ symbols: nextSymbols, horizon, custom })); }
               }
             }}
-            disabled={symbols.length === 0 && input.trim().length === 0}
+            disabled={(symbols.length === 0 && input.trim().length === 0) || !!error}
             className="inline-flex items-center rounded-md border border-black/10 dark:border-white/15 px-3 py-1.5 text-sm font-medium disabled:opacity-60"
           >
             Stats

@@ -21,9 +21,10 @@ type Props = {
   dates: string[];
   series: Series[];
   base?: number;
+  height?: number | 'full';
 };
 
-export default function ForwardReturnsChart({ dates, series, base }: Props) {
+export default function ForwardReturnsChart({ dates, series, base, height }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
   const zeroLineLabel = mode === '$' ? '$0' : '0%';
 
@@ -106,7 +107,7 @@ export default function ForwardReturnsChart({ dates, series, base }: Props) {
           </button>
         </div>
       </div>
-      <div className="h-[320px] w-full">
+      <div className="w-full" style={{ height: height === 'full' ? '100%' : `${height ?? 320}px` }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ left: 12, right: 12, top: 8, bottom: 8 }} syncId="sync-returns">
             <CartesianGrid strokeDasharray="3 3" stroke="rgb(0 0 0 / 0.06)" />

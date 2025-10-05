@@ -8,7 +8,7 @@ type Props = {
   onClose: () => void;
   title?: string;
   subtitle?: string;
-  children: React.ReactNode;
+  children: (forPrint: boolean) => React.ReactNode;
 };
 
 export default function ChartLightbox(props: Props) {
@@ -17,6 +17,7 @@ export default function ChartLightbox(props: Props) {
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const draggingRef = useRef<{ dragging: boolean; startX: number; startY: number; startOffsetX: number; startOffsetY: number }>({ dragging: false, startX: 0, startY: 0, startOffsetX: 0, startOffsetY: 0 });
+  const frameRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -35,6 +36,8 @@ export default function ChartLightbox(props: Props) {
       document.documentElement.style.overflow = prevOverflow;
     };
   }, [open, onClose]);
+
+  // No JS print toggling; rely on CSS @media print so container keeps explicit size
 
   const onWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -59,13 +62,11 @@ export default function ChartLightbox(props: Props) {
     setOffset({ x: draggingRef.current.startOffsetX + dx, y: draggingRef.current.startOffsetY + dy });
   };
   const onMouseUp = (e: React.MouseEvent) => {
-    // If pointer moved significantly, treat as drag end only; do not toggle zoom
     const dx = Math.abs(e.clientX - draggingRef.current.startX);
     const dy = Math.abs(e.clientY - draggingRef.current.startY);
-    const moved = dx > 1 || dy > 1;
+    const moved = dx > 6 || dy > 6;
     draggingRef.current.dragging = false;
-    if (!moved) {
-      // Click without drag ends here: toggle zoom
+    if (!moved && e.button === 0) {
       onToggleZoom(e);
     }
   };
@@ -88,17 +89,18 @@ export default function ChartLightbox(props: Props) {
         <style>{`@media print {
   /* Hide everything except the lightbox portal */
   body > :not(.clb-portal) { display: none !important; }
-  .clb-backdrop { display: none !important; }
-  .clb-controls { display: none !important; }
-  .clb-root { position: static !important; inset: auto !important; height: auto !important; display: block !important; }
+  .clb-backdrop, .clb-controls { display: none !important; }
   html, body { margin: 0 !important; padding: 0 !important; }
-  /* Force stable print dimensions so ResponsiveContainer has explicit height */
-  .print-container { width: 100% !important; height: auto !important; }
-  .print-inner { width: 7.5in !important; height: 5in !important; }
+  @page { margin: 0.5in; }
+  /* Force explicit size so ResponsiveContainer has height */
+  .print-container { width: 7.5in !important; height: 9.5in !important; margin: 0 auto !important; }
+  .print-inner { width: 100% !important; height: 100% !important; }
+  .print-transform { transform: none !important; }
+  .print-abs { position: static !important; left: auto !important; top: auto !important; }
 }`}</style>
         <div className="absolute inset-0 bg-black/80 clb-backdrop" onClick={onClose} />
-        <div className="absolute inset-0 flex flex-col clb-root">
-          <div className="flex items-center justify-end gap-2 p-3 clb-controls">
+        <div className="absolute inset-0 flex flex-col clb-root" onClick={(e) => { if (frameRef.current && !frameRef.current.contains(e.target as Node)) onClose(); }}>
+          <div className="flex items-center justify-end gap-2 p-3 clb-controls" onClick={(e) => e.stopPropagation()}>
             <button type="button" onClick={() => window.print()} className="rounded-md bg-white text-black px-3 py-1.5 text-sm hover:bg-black/10">
               Print
             </button>
@@ -106,13 +108,14 @@ export default function ChartLightbox(props: Props) {
               ✕
             </button>
           </div>
-          <div className="px-4 pb-4 text-center select-none" onDoubleClick={onReset}>
+          <div className="px-4 pb-4 text-center select-none">
             {title && <div className="text-white text-base font-medium mb-1">{title}</div>}
             {subtitle && <div className="text-white/80 text-sm mb-3">{subtitle}</div>}
             <div
               role="presentation"
               className="relative mx-auto overflow-hidden rounded-lg bg-white/5 print-container"
               style={{ width: "92vw", height: "82vh", cursor: draggingRef.current.dragging ? "grabbing" : "grab" }}
+              ref={frameRef}
               onWheel={onWheel}
               onMouseDown={onMouseDown}
               onMouseMove={onMouseMove}
@@ -121,11 +124,19 @@ export default function ChartLightbox(props: Props) {
               // Click handled via onMouseUp to disambiguate drag vs click
             >
               <div
-                className="absolute left-1/2 top-1/2 will-change-transform"
+                className="absolute left-1/2 top-1/2 will-change-transform print-abs print-transform"
                 style={{ transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${scale})`, transformOrigin: "center center" }}
               >
                 <div className="w-[92vw] h-[82vh] print-inner">
-                  {children}
+                  {children(false)}
+                </div>
+              </div>
+            </div>
+            {/* Print-only static container with explicit page-fitting size */}
+            <div className="print-only" style={{ display: 'none' }}>
+              <div style={{ width: '100%', height: '9in', margin: '0 auto' }}>
+                <div style={{ width: '100%', height: '100%' }}>
+                  {children(true)}
                 </div>
               </div>
             </div>

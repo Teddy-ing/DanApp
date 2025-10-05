@@ -125,25 +125,34 @@ export default function ReturnsView(props: {
         onClose={() => setLightbox({ open: false, which: null })}
         title={lightbox.which === 'forward' ? 'Forward Returns' : lightbox.which === 'returns' ? 'Returns' : lightbox.which === 'price' ? 'Price' : undefined}
         subtitle={symbolsDisplay}
-      >
-        {lightbox.which === 'forward' && returnsQuery.isSuccess && (
-          <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} />
-        )}
-        {lightbox.which === 'returns' && returnsQuery.isSuccess && (
-          <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} />
-        )}
-        {lightbox.which === 'price' && pricesQuery.isSuccess && (
-          <PriceChart
-            items={pricesQuery.data.items.map((i) => ({
-              symbol: i.symbol,
-              candles: i.candles.map((c) => ({
-                dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
-                close: typeof c.close === 'number' ? c.close : null,
-              })),
-            }))}
-          />
-        )}
-      </ChartLightbox>
+      >{(forPrint) => (
+        <>
+          {lightbox.which === 'forward' && returnsQuery.isSuccess && (
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : ''}>
+              <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} height={'full'} />
+            </div>
+          )}
+          {lightbox.which === 'returns' && returnsQuery.isSuccess && (
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : ''}>
+              <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} height={'full'} />
+            </div>
+          )}
+          {lightbox.which === 'price' && pricesQuery.isSuccess && (
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : ''}>
+              <PriceChart
+                items={pricesQuery.data.items.map((i) => ({
+                  symbol: i.symbol,
+                  candles: i.candles.map((c) => ({
+                    dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
+                    close: typeof c.close === 'number' ? c.close : null,
+                  })),
+                }))}
+                height={'full'}
+              />
+            </div>
+          )}
+        </>
+      )}</ChartLightbox>
     </div>
   );
 }
