@@ -204,6 +204,7 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
     let started = false;
     let shares = 0;
     let sharesAtPriorClose = 0; // shares at the end of the previous trading day
+    let priorClosePrice: number | null = null; // last seen close price for split detection
     let pendingCash = 0; // dividend cash waiting for next available open
     let divIdx = 0;
 
@@ -232,9 +233,26 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
       }
 
       if (started) {
-        // 1) Splits: prices from Yahoo chart are historically split-adjusted.
-        //    We do NOT multiply shares by split ratios again; doing so would
-        //    double-apply the split and create artificial jumps.
+        // 1) Splits: Detect if provider prices are unadjusted across today's split(s).
+        // If unadjusted, multiply shares by the composite split ratio; otherwise ignore.
+        const splitsToday = p.splitsByDate.get(d);
+        if (splitsToday && splitsToday.length > 0) {
+          const compositeRatio = splitsToday.reduce(
+            (acc, s) => (typeof s.ratio === 'number' && isFinite(s.ratio) && s.ratio > 0 ? acc * s.ratio : acc),
+            1
+          );
+          if (compositeRatio > 1) {
+            const currPrice = closePrice ?? openPrice ?? null;
+            if (priorClosePrice != null && currPrice != null && priorClosePrice > 0 && currPrice > 0) {
+              const observed = priorClosePrice / currPrice;
+              const relDiff = Math.abs(observed - compositeRatio) / compositeRatio;
+              // Tolerance generously high to accommodate intraday/open-close differences when using open for currPrice
+              if (relDiff <= 0.2) {
+                shares = roundShares4(shares * compositeRatio);
+              }
+            }
+          }
+        }
 
         // 2) Execute any pending reinvestment at the next trading-day open when available
         if (pendingCash > 0 && openPrice != null) {
@@ -258,6 +276,7 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
 
       // Update prior-close shares snapshot for the next iteration
       sharesAtPriorClose = started ? shares : 0;
+      priorClosePrice = closePrice != null ? closePrice : priorClosePrice;
     }
 
     seriesOutputs.push({ symbol: p.symbol, value: values, pct: pcts });
