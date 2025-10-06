@@ -217,6 +217,8 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
         // Initialize on the first available close on/after the boundary
         shares = roundShares4(baseInvestment / closePrice);
         started = true;
+        // Seed prior close for subsequent split detection
+        priorClosePrice = closePrice;
       }
 
       // Process dividends with pay date <= current trading date.
