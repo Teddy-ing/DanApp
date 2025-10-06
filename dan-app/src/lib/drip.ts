@@ -243,13 +243,14 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
             (acc, s) => (typeof s.ratio === 'number' && isFinite(s.ratio) && s.ratio > 0 ? acc * s.ratio : acc),
             1
           );
-          if (compositeRatio > 1) {
+          // Apply for any valid ratio ≠ 1 (forward or reverse split)
+          if (compositeRatio !== 1) {
             const currPrice = closePrice ?? openPrice ?? null;
             if (priorClosePrice != null && currPrice != null && priorClosePrice > 0 && currPrice > 0) {
               const observed = priorClosePrice / currPrice;
               const relDiff = Math.abs(observed - compositeRatio) / compositeRatio;
-              // Tolerance generously high to accommodate intraday/open-close differences when using open for currPrice
-              if (relDiff <= 0.2) {
+              // Tighter tolerance (10%) since we use close first, open only as fallback
+              if (relDiff <= 0.10) {
                 shares = roundShares4(shares * compositeRatio);
               }
             }
