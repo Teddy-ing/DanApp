@@ -21,6 +21,9 @@ export default function ReturnsView(props: {
   const [lightbox, setLightbox] = React.useState<{ open: boolean; which: 'forward' | 'returns' | 'price' | null }>({ open: false, which: null });
   useEffect(() => {
     if (typeof onLightboxOpenChange === 'function') onLightboxOpenChange(lightbox.open);
+    return () => {
+      if (typeof onLightboxOpenChange === 'function') onLightboxOpenChange(false);
+    };
   }, [lightbox.open, onLightboxOpenChange]);
   const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
   const enabled = symbols.length > 0;
@@ -127,6 +130,7 @@ export default function ReturnsView(props: {
         subtitle={symbolsDisplay}
       >{(forPrint) => (
         <>
+          {lightbox.open && lightbox.which == null && setLightbox({ open: true, which: 'returns' })}
           {lightbox.which === 'forward' && returnsQuery.isSuccess && (
             <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : 'h-full w-full'}>
               <ForwardReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} base={base} height={'full'} />

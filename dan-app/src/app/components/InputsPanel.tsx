@@ -23,8 +23,10 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
       try {
         const normalized = validateUsTickerFormat(trimmed);
         if (symbols.includes(normalized)) {
-          // Duplicate: keep input (so user can edit), set a gentle error, and do nothing
-          setError('Duplicate symbol');
+          // Silent de-dupe: clear input, show transient hint, keep order
+          setInput('');
+          setError('Already added');
+          setTimeout(() => setError(null), 1500);
           return;
         }
         if (!canAddMore) {
@@ -182,7 +184,9 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 try {
                   const normalized = validateUsTickerFormat(pending);
                   if (symbols.includes(normalized)) {
-                    setError('Duplicate symbol');
+                    setInput('');
+                    setError('Already added');
+                    setTimeout(() => setError(null), 1500);
                     return;
                   }
                   if (symbols.length >= 5) {
@@ -219,7 +223,9 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 try {
                   const normalized = validateUsTickerFormat(pending);
                   if (symbols.includes(normalized)) {
-                    setError('Duplicate symbol');
+                    setInput('');
+                    setError('Already added');
+                    setTimeout(() => setError(null), 1500);
                     return;
                   }
                   if (symbols.length >= 5) {
