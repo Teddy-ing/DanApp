@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { validateUsTickerFormat } from '@/lib/ticker';
 
 type Horizon = '5y' | 'max';
@@ -16,6 +16,20 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
 
   const canAddMore = symbols.length < 5;
 
+  const clearTimerRef = useRef<number | null>(null);
+  function showTransientHint(msg: string, ms = 1500) {
+    if (clearTimerRef.current != null) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
+    setError(msg);
+    clearTimerRef.current = window.setTimeout(() => {
+      setError((curr) => (curr === msg ? null : curr));
+      clearTimerRef.current = null;
+    }, ms);
+  }
+  useEffect(() => () => { if (clearTimerRef.current != null) clearTimeout(clearTimerRef.current); }, []);
+
   const addSymbol = useCallback(
     (raw: string) => {
       const trimmed = raw.trim();
@@ -25,8 +39,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
         if (symbols.includes(normalized)) {
           // Silent de-dupe: clear input, show transient hint, keep order
           setInput('');
-          setError('Already added');
-          setTimeout(() => setError(null), 1500);
+          showTransientHint('Already added');
           return;
         }
         if (!canAddMore) {
@@ -185,8 +198,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                   const normalized = validateUsTickerFormat(pending);
                   if (symbols.includes(normalized)) {
                     setInput('');
-                    setError('Already added');
-                    setTimeout(() => setError(null), 1500);
+                    showTransientHint('Already added');
                     return;
                   }
                   if (symbols.length >= 5) {
@@ -224,8 +236,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                   const normalized = validateUsTickerFormat(pending);
                   if (symbols.includes(normalized)) {
                     setInput('');
-                    setError('Already added');
-                    setTimeout(() => setError(null), 1500);
+                    showTransientHint('Already added');
                     return;
                   }
                   if (symbols.length >= 5) {

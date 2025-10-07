@@ -19,10 +19,12 @@ export default function ReturnsView(props: {
 }) {
   const { symbols, base, horizon, custom, onLightboxOpenChange } = props;
   const [lightbox, setLightbox] = React.useState<{ open: boolean; which: 'forward' | 'returns' | 'price' | null }>({ open: false, which: null });
+  const wasOpenRef = React.useRef<boolean>(false);
   useEffect(() => {
     if (typeof onLightboxOpenChange === 'function') onLightboxOpenChange(lightbox.open);
+    wasOpenRef.current = wasOpenRef.current || lightbox.open;
     return () => {
-      if (typeof onLightboxOpenChange === 'function') onLightboxOpenChange(false);
+      if (wasOpenRef.current && typeof onLightboxOpenChange === 'function') onLightboxOpenChange(false);
     };
   }, [lightbox.open, onLightboxOpenChange]);
   useEffect(() => {

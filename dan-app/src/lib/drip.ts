@@ -280,7 +280,11 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
 
       // Update prior-close shares snapshot for the next iteration
       sharesAtPriorClose = started ? shares : 0;
-      priorClosePrice = (closePrice ?? adjClosePrice) != null ? (closePrice ?? adjClosePrice) as number : priorClosePrice;
+      if (closePrice != null) {
+        priorClosePrice = closePrice;
+      } else if (adjClosePrice != null) {
+        priorClosePrice = adjClosePrice;
+      }
     }
 
     seriesOutputs.push({ symbol: p.symbol, value: values, pct: pcts });
