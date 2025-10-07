@@ -200,7 +200,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'Invalid ticker';
                   setError(msg);
-                  return; // Do not proceed on validation error
+                  // Proceed with existing valid symbols if any
                 }
               }
               if (nextSymbols.length > 0) {
@@ -239,7 +239,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
                 } catch (e) {
                   const msg = e instanceof Error ? e.message : 'Invalid ticker';
                   setError(msg);
-                  return; // Do not proceed on validation error
+                  // Proceed with existing valid symbols if any
                 }
               }
               if (nextSymbols.length > 0) {
