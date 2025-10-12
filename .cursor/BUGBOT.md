@@ -37,3 +37,37 @@ counts constant across split dates.
 **Flag only if**
 - The price series is detected as **unadjusted** (pre/post close ≈ composite ratio within 10%) and shares are not adjusted (or prices not adjusted) accordingly.
 - Detector lacks guards (e.g., divides without ensuring prior/current > 0) or ignores reverse splits (`ratio < 1`).
+
+## False Positive: Prior Close Initialization in Split Detection
+
+**Summary**
+Bugbot flags that `priorClosePrice` is initialized with the current day's close on the first day, or remains uninitialized if the initial close is null.
+
+**Why this is intended**
+- We only set `started` when a valid close exists; if the first close is null, the simulation does not start and split detection is skipped.
+- On the first started day, `priorClosePrice` is seeded to that day's close; the detector then compares `observed = priorClosePrice / currPrice` to the composite split ratio. With both values from the same day, `observed ≈ 1`, which cannot spuriously match any split ratio `≠ 1` under our 10% tolerance, so no erroneous share adjustment occurs.
+
+**Do not flag**
+- Seeding `priorClosePrice` on the first started day.
+- Not starting until a valid close exists.
+
+**Flag only if**
+- Split adjustment occurs on the first started day despite `compositeRatio !== 1` (i.e., tolerance/guards misconfigured).
+
+## False Positive: Carrying Prior Close Across Missing Price Days
+
+**Summary**
+Bugbot flags that `priorClosePrice` can become stale when a day lacks both `close` and `adjClose`, potentially affecting split detection on subsequent days.
+
+**Why this is intended**
+- When provider data omits a day's `close/adjClose`, we retain the last valid prior close; on the next observed price, detection uses that prior close against the current day’s `close/adjClose/open` (in that order) with a 10% tolerance. This prevents false positives and avoids guessing.
+- If data gaps make the prior reference older than one day, the tolerance makes spurious matches unlikely; in the worst case, a real unadjusted split may be skipped (no adjustment), which is safer than a false adjustment.
+
+**Implementation notes**
+- Detector requires `priorClosePrice > 0` and `currPrice > 0` before evaluating; values are sanitized earlier.
+
+**Do not flag**
+- Persisting prior close across days with missing `close/adjClose`.
+
+**Flag only if**
+- Adjustment occurs when `priorClosePrice <= 0` or `currPrice <= 0`, or when values are non‑finite.

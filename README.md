@@ -4,12 +4,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 First, run the development server:
 
+Preferred package manager: pnpm
+
 ```bash
+pnpm dev
+# or
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
 # or
 bun dev
 ```
@@ -19,6 +21,23 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Tech Stack
+
+- Framework & Language: Next.js 15 (App Router, Turbopack dev), React 19, TypeScript 5
+- Styling: Tailwind CSS 4, next/font (Geist)
+- Data Fetching/State: TanStack Query 5
+- Auth: NextAuth v5 (Google)
+- Data Provider: Yahoo Finance via RapidAPI
+- Caching/Storage: Upstash Redis
+- Validation: Zod
+- Charts: Recharts
+- Excel Export: ExcelJS
+- Scraping Fallback: Cheerio
+- Analytics: @vercel/analytics
+- Testing: Vitest
+- Linting/Build: ESLint 9, eslint-config-next
+- Package Manager: pnpm
 
 ## Project notes
 
