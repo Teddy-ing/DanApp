@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useMemo, useState } from 'react';
 import {
@@ -10,39 +10,81 @@ import {
   Legend,
   ResponsiveContainer,
   CartesianGrid,
+  ReferenceLine,
+  ReferenceArea,
 } from 'recharts';
 import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 type Series = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
-export default function ReturnsChart(props: { dates: string[]; series: Series[] }) {
+type Props = {
+  dates: string[];
+  series: Series[];
+  height?: number | 'full';
+};
+
+export default function ReturnsChart({ dates, series, height }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
+  const zeroLineLabel = mode === '$' ? '$0' : '0%';
 
-  const palette = [
-    '#5B8DEF',
-    '#E66E6E',
-    '#6DD3A8',
-    '#F5C26B',
-    '#B388EB',
-  ];
+  const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
 
-  const data = useMemo(() => {
+  const { data, min, max, xMin, xMax } = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
-    for (let i = 0; i < props.dates.length; i += 1) {
-      const row: Record<string, number | string | null> = { date: props.dates[i] };
-      for (const s of props.series) {
-        const val = s.value[i] ?? null;
-        const pct = s.pct[i] ?? null;
-        row[s.symbol] = mode === '$' ? val : (pct == null ? null : pct * 100);
+    let min: number | null = null;
+    let max: number | null = null;
+
+    for (let i = 0; i < dates.length; i += 1) {
+      const row: Record<string, number | string | null> = { date: dates[i] };
+      for (const s of series) {
+        const rawVal = s.value[i] ?? null;
+        const rawPct = s.pct[i] ?? null;
+        const nextVal = mode === '$' ? rawVal : (rawPct == null ? null : rawPct * 100);
+        const isFiniteNumber = typeof nextVal === 'number' && Number.isFinite(nextVal);
+        row[s.symbol] = isFiniteNumber ? nextVal : null;
+        if (isFiniteNumber) {
+          const value = nextVal as number;
+          min = min == null ? value : Math.min(min, value);
+          max = max == null ? value : Math.max(max, value);
+        }
       }
       rows.push(row);
     }
-    return rows;
-  }, [props.dates, props.series, mode]);
+
+    const xMin = rows[0]?.date as string | undefined;
+    const xMax = rows[rows.length - 1]?.date as string | undefined;
+
+    const finalMin = min ?? 0;
+    const finalMax = max ?? 0;
+
+    return { data: rows, min: finalMin, max: finalMax, xMin, xMax };
+  }, [dates, series, mode]);
+
+  const yDomain = useMemo(() => {
+    // Clamped p approach: try to put 0 at p=0.1 from bottom without inflating the top.
+    const p = 0.1;
+    const R = (1 - p) / p; // 9 when p = 0.1
+    const minData = min;
+    const maxData = max;
+    if (minData === 0 && maxData === 0) {
+      const a = 1; // minimal range
+      return [-a, R * a];
+    }
+    // Keep yMax anchored to data; only deepen yMin as needed.
+    const yMax = maxData;
+    const yMinCandidate = -yMax / R;
+    if (minData >= yMinCandidate) {
+      // Can keep 0 at exactly p
+      return [yMinCandidate, yMax];
+    }
+    // Negative data exceeds candidate; include it and accept 0 above p.
+    return [minData, yMax];
+  }, [min, max]);
+  const hasDomain = typeof xMin === 'string' && typeof xMax === 'string' && data.length > 0;
 
   return (
-    <div className="w-full">
-      <div className="flex items-center gap-2 mb-2">
+    <div className="w-full" style={{ height: height === 'full' ? '100%' : undefined }}>
+      <div className="flex items-center gap-2 mb-2 print:hidden">
         <div className="inline-flex rounded-md border border-black/10 dark:border-white/15 overflow-hidden">
           <button
             type="button"
@@ -60,16 +102,67 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
           </button>
         </div>
       </div>
-      <div className="h-[320px] w-full">
+      <div className="w-full" style={{ height: height === 'full' ? '100%' : `${height ?? 320}px` }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data} margin={{ left: 12, right: 12, top: 8, bottom: 8 }} syncId="sync-returns">
             <CartesianGrid strokeDasharray="3 3" stroke="rgb(0 0 0 / 0.06)" />
             <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={32} />
             <YAxis
               tick={{ fontSize: 12 }}
-              domain={['auto', 'auto']}
+              domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
+            {hasDomain && (
+              <>
+                {yDomain[1] <= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#dc2626"
+                    fillOpacity={0.10}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : yDomain[0] >= 0 ? (
+                  <ReferenceArea
+                    y1={yDomain[0]}
+                    y2={yDomain[1]}
+                    x1={xMin}
+                    x2={xMax}
+                    fill="#16a34a"
+                    fillOpacity={0.10}
+                    strokeOpacity={0}
+                    ifOverflow="visible"
+                  />
+                ) : (
+                  <>
+                    <ReferenceArea
+                      y1={0}
+                      y2={yDomain[1]}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#16a34a"
+                      fillOpacity={0.10}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                    <ReferenceArea
+                      y1={yDomain[0]}
+                      y2={0}
+                      x1={xMin}
+                      x2={xMax}
+                      fill="#dc2626"
+                      fillOpacity={0.10}
+                      strokeOpacity={0}
+                      ifOverflow="visible"
+                    />
+                  </>
+                )}
+              </>
+            )}
+            <ReferenceLine y={0} stroke="rgb(148 163 184 / 0.55)" strokeDasharray="4 4" label={{ value: zeroLineLabel, position: 'left', fill: '#94a3b8', fontSize: 12 }} />
             <Tooltip
               formatter={(value: ValueType, name: NameType) => {
                 const num = typeof value === 'number' ? value : null;
@@ -79,13 +172,13 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
               labelFormatter={(label) => `${label}`}
             />
             <Legend />
-            {props.series.map((s, i) => (
+            {series.map((s, index) => (
               <Line
                 key={s.symbol}
                 type="monotone"
                 dataKey={s.symbol}
                 dot={false}
-                stroke={palette[i % palette.length]}
+                stroke={palette[index % palette.length]}
                 strokeWidth={2}
                 isAnimationActive={false}
                 connectNulls
@@ -97,5 +190,3 @@ export default function ReturnsChart(props: { dates: string[]; series: Series[] 
     </div>
   );
 }
-
-

@@ -4,12 +4,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 First, run the development server:
 
+Preferred package manager: pnpm
+
 ```bash
+pnpm dev
+# or
 npm run dev
 # or
 yarn dev
-# or
-pnpm dev
 # or
 bun dev
 ```
@@ -19,6 +21,23 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Tech Stack
+
+- Framework & Language: Next.js 15 (App Router, Turbopack dev), React 19, TypeScript 5
+- Styling: Tailwind CSS 4, next/font (Geist)
+- Data Fetching/State: TanStack Query 5
+- Auth: NextAuth v5 (Google)
+- Data Provider: Yahoo Finance via RapidAPI
+- Caching/Storage: Upstash Redis
+- Validation: Zod
+- Charts: Recharts
+- Excel Export: ExcelJS
+- Scraping Fallback: Cheerio
+- Analytics: @vercel/analytics
+- Testing: Vitest
+- Linting/Build: ESLint 9, eslint-config-next
+- Package Manager: pnpm
 
 ## Project notes
 
@@ -33,7 +52,22 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Returns/Price charts now include labels:
   - Returns chart: "Returns from {amount} in {symbols} at {starting point}" where amount is USD-formatted, symbols are comma-joined, and starting point is the first date of the series.
   - Price chart: "Price of {symbols}" using the same symbol display.
-  - Implemented in `src/app/components/ReturnsView.tsx`.
+- Implemented in `src/app/components/ReturnsView.tsx`.
+- Chart order updated: Forward Returns, Returns, then Price.
+- Inputs: Button handlers validate pending input and block duplicates/over-limit; buttons no longer stay disabled after a validation error.
+  - Fix: Removed error-based disabled state so users can retry immediately.
+- Charts: When embedded in the lightbox, `ReturnsChart` and `ForwardReturnsChart` correctly respect `height="full"`.
+  - Fix: Top-level wrappers now take 100% height to satisfy `ResponsiveContainer` requirements.
+  - Fix: Y-axis bounds now seed from the first finite data point rather than 0 to avoid incorrect domains when data is entirely positive or negative.
+- Lightbox: Improved click/drag behavior (only left-click toggles zoom), and print layout.
+- Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
+
+### Lightbox (chart enlarge, print)
+
+- Double-click any chart to open a full-screen lightbox overlay.
+- Interactions: left-click toggles zoom (1x/2x), wheel zoom adjusts smoothly, drag to pan, double-click background resets, Esc or backdrop click closes.
+- Print button in the top-right prints the enlarged chart (title/subtitle/legend are included; overlay controls are hidden in print).
+- Fix: Lightbox chart wrappers now use `h-full w-full` (non-print) so charts rendered with `height="full"` receive an explicit height from the container and display correctly.
 
 ### Front page (marketing)
 
@@ -41,6 +75,11 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Anchored sections: `#methodology`, `#reliability`, `#security`, `#faq` (includes `#pricing-usage`).
 - Centralized copy in `src/lib/marketingCopy.ts` for consistent messaging (scope, exclusions, usage, security, disclaimers).
 - Footer includes Terms/Privacy placeholders and “Data from Yahoo Finance via RapidAPI. For informational purposes only. Not investment advice. Data may be delayed.”
+
+### Theme toggle
+
+- Removed the theme toggle button and related logic. The app now follows the default theme only.
+  - Rationale: Simplify UI; avoid confusion. No functional impact on returns/prices.
 
 ### Excel export (XLSX)
 
@@ -153,3 +192,9 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Analytics
+
+- This app uses `@vercel/analytics` for privacy-friendly page analytics.
+- Collection is enabled only when `VERCEL_ENV` is `production` (Vercel Production deployments).
+- Component is mounted in `dan-app/src/app/layout.tsx`.

@@ -204,6 +204,7 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
     let started = false;
     let shares = 0;
     let sharesAtPriorClose = 0; // shares at the end of the previous trading day
+    let priorClosePrice: number | null = null; // last seen close price for split detection
     let pendingCash = 0; // dividend cash waiting for next available open
     let divIdx = 0;
 
@@ -211,11 +212,14 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
       const candle = p.byDate.get(d);
       const openPrice = candle?.open ?? null;
       const closePrice = candle?.close ?? null;
+      const adjClosePrice = candle?.adjClose ?? null;
 
       if (!started && closePrice != null) {
         // Initialize on the first available close on/after the boundary
         shares = roundShares4(baseInvestment / closePrice);
         started = true;
+        // Seed prior close for subsequent split detection
+        priorClosePrice = closePrice;
       }
 
       // Process dividends with pay date <= current trading date.
@@ -232,12 +236,24 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
       }
 
       if (started) {
-        // 1) Apply splits effective on d
+        // 1) Splits: Detect if provider prices are unadjusted across today's split(s).
+        // If unadjusted, multiply shares by the composite split ratio; otherwise ignore.
         const splitsToday = p.splitsByDate.get(d);
         if (splitsToday && splitsToday.length > 0) {
-          for (const s of splitsToday) {
-            if (typeof s.ratio === "number" && isFinite(s.ratio) && s.ratio > 0) {
-              shares = roundShares4(shares * s.ratio);
+          const compositeRatio = splitsToday.reduce(
+            (acc, s) => (typeof s.ratio === 'number' && isFinite(s.ratio) && s.ratio > 0 ? acc * s.ratio : acc),
+            1
+          );
+          // Apply for any valid finite ratio ≠ 1 (forward or reverse split)
+          if (Number.isFinite(compositeRatio) && compositeRatio > 0 && compositeRatio !== 1) {
+            const currPrice = closePrice ?? adjClosePrice ?? openPrice ?? null;
+            if (priorClosePrice != null && currPrice != null && priorClosePrice > 0 && currPrice > 0) {
+              const observed = priorClosePrice / currPrice;
+              const relDiff = Math.abs(observed - compositeRatio) / compositeRatio;
+              // Tighter tolerance (10%) since we use close first, adjClose/open only as fallback
+              if (relDiff <= 0.10) {
+                shares = roundShares4(shares * compositeRatio);
+              }
             }
           }
         }
@@ -264,6 +280,11 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
 
       // Update prior-close shares snapshot for the next iteration
       sharesAtPriorClose = started ? shares : 0;
+      if (closePrice != null) {
+        priorClosePrice = closePrice;
+      } else if (adjClosePrice != null) {
+        priorClosePrice = adjClosePrice;
+      }
     }
 
     seriesOutputs.push({ symbol: p.symbol, value: values, pct: pcts });

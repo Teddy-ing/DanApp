@@ -13,7 +13,7 @@ const googleClientSecret =
   "missing";
 const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
-// Debug logs removed after verification
+
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret,

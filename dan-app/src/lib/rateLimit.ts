@@ -1,5 +1,4 @@
 import { createRedisClient, RedisClient } from "./redis";
-import { isIP } from "node:net";
 
 export type RateLimitResult = {
   allowed: boolean;
@@ -27,7 +26,8 @@ export async function checkRateLimit(
   const redis = getRedis();
   if (!redis) return { allowed: true };
 
-  const key = `rl:${routeKey}:${userKey}:${windowSeconds}`;
+  const normalizedUserKey = userKey && userKey.trim().length > 0 ? userKey.trim() : "anon";
+  const key = `rl:${routeKey}:${normalizedUserKey}:${windowSeconds}`;
   const nowMs = Date.now();
   const windowMs = windowSeconds * 1000;
   const earliestMs = nowMs - windowMs;
@@ -55,16 +55,4 @@ export async function checkRateLimit(
   await redis.raw.expire(key, windowSeconds);
   return { allowed: true };
 }
-
-export function extractUserId(headers: Headers): string {
-  const explicit = headers.get("x-user-id");
-  if (explicit && explicit.trim().length > 0) return explicit.trim();
-  const xff = headers.get("x-forwarded-for");
-  if (xff) {
-    const ip = xff.split(",")[0].trim();
-    if (isIP(ip)) return ip;
-  }
-  return "anon";
-}
-
 
