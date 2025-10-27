@@ -17,6 +17,7 @@
 - `tasks/tasks-project_markdown.md` — Updated to mark task 4.1 complete and list relevant files
 ### Notes
 2 charts - the one showing the thing and another being normal
+front page should later make it known of the 1 week trial
 
 
 ## Tasks
@@ -72,3 +73,97 @@
   - [ ] 7.5 Confirm monitoring via Vercel logs; optionally wire Sentry DSN.
 
 
+
+## Monetization and Freemium
+
+### Decision summary
+- Stripe Checkout + Billing Portal; single monthly price with 7-day free trial.
+- No card required to start trial; price: $7.50 USD/month.
+- Keep Google-only sign-in; rely on Google `email_verified`.
+- Replace per-user RapidAPI keys with one server-managed `RAPIDAPI_KEY`.
+- Auto-start trial on first sign-in and clearly message on/around the front page.
+- Soft anti-abuse: per-user and per-IP rate limits; device cookie; optional CAPTCHA on spikes.
+
+### Why this matters (≤80 words)
+Removes user friction of supplying keys, enables predictable costs via a single platform key, and introduces revenue with a simple 7‑day free trial then subscription. Server-side gating prevents client leaks and supports soft abuse controls. Stripe Checkout/Portal keeps payment UX secure and offsite. This change aligns the product with a sustainable freemium model while preserving existing charts and workflows.
+
+### Access model and statuses
+- Statuses: `trialing` (until `trialEndsAt`), `active` (Stripe subscription), `expired` (trial ended or subscription inactive).
+- Gating: All data endpoints (e.g., `GET /api/returns`) call a server util `assertAccessAllowed(userId)` to allow only `trialing` or `active`.
+- Rate limits: `trialing` 30 rpm/user; `active` 120 rpm/user; global per-IP soft caps.
+
+### Data stored (Redis)
+- `user:{id}`: `trialStartedAt`, `trialEndsAt`, `status`, `stripeCustomerId`, `subscriptionId`, `currentPeriodEnd`, `cancelAtPeriodEnd`, `lastSeenAt`.
+- `abuse:{ip}` and `abuse:{deviceId}` counters for soft abuse prevention.
+
+### Endpoints and server updates
+- Add `POST /api/billing/checkout` → returns Stripe Checkout URL for subscription.
+- Add `POST /api/billing/portal` → returns Stripe Billing Portal URL.
+- Add `POST /api/stripe/webhooks` → handle `checkout.session.completed`, `customer.subscription.created|updated|deleted` and update user status.
+- Add `GET /api/user/status` → `{ status, trialEndsAt, currentPeriodEnd, canAccess }`.
+- Update existing `GET /api/*` to call `assertAccessAllowed(userId)`.
+- Remove `/api/user/key` endpoints (no longer needed).
+
+### UI updates
+- Replace `KeyModal` with a lightweight Access panel:
+  - Trialing: show days remaining and a “Subscribe” button (to Checkout).
+  - Active: show a “Manage billing” button (to Billing Portal).
+  - Expired: show “Subscribe to continue”.
+- Front page: pre-sign-in note that a 7‑day free trial starts on first sign-in.
+
+### Env/config additions
+- `RAPIDAPI_KEY` (shared provider key; server-only).
+- `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`.
+- `STRIPE_PRICE_ID` (monthly $7.50; currency `usd`).
+- `STRIPE_WEBHOOK_SECRET`.
+
+### Outside-of-repo setup (owner actions)
+1) Stripe (test mode first)
+   - Create Stripe account and enable Billing/Checkout.
+   - Create Product (e.g., “DanApp Pro”) and recurring Price: $7.50 USD/month.
+   - Ensure Price has a 7-day free trial (no card required to start).
+   - In Developers → API keys: copy Secret and Publishable keys.
+   - In Developers → Webhooks: add endpoint `https://your-vercel-domain.com/api/stripe/webhooks` with events:
+     - `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`.
+   - Copy the webhook signing secret.
+   - Configure Billing Portal (Business settings → Customer portal) and allow plan cancel/manage.
+
+2) Vercel environment
+   - Set env vars on the project: `RAPIDAPI_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`.
+   - Ensure existing vars remain set: `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`.
+   - Redeploy to apply env changes.
+
+3) RapidAPI plan
+   - Ensure the account plan supports expected paid usage; monitor quotas and cost caps.
+
+4) DNS/URLs
+   - Decide on production domain; update Stripe webhook URL if domain changes.
+
+5) Monitoring
+   - Watch Vercel logs and Stripe dashboard events when enabling live mode.
+
+### Implementation steps (sequenced)
+1. Server: add `assertAccessAllowed(userId)` and trial initializer on first authenticated hit.
+2. Server: add `GET /api/user/status`.
+3. Server: implement Stripe Checkout/Portal endpoints.
+4. Server: implement Stripe webhook handler and status transitions.
+5. Server: swap data providers to use shared `RAPIDAPI_KEY` only.
+6. Server: remove `/api/user/key` routes and related code; purge stored user keys.
+7. UI: add Access panel and pre-sign-in trial messaging; remove `KeyModal`.
+8. Gating: apply `assertAccessAllowed` in `GET /api/returns` (and related routes).
+9. Rate limits: parameterize by status and add per-IP counters + device cookie.
+10. Docs: update `README.md` with env/Stripe steps and note the freemium model.
+
+---
+
+- [ ] 8.0 Monetization and billing
+  - [ ] 8.1 Remove per-user key flow: delete `/api/user/key` and `KeyModal`; purge `user:{id}:rapidapiKey`.
+  - [ ] 8.2 Inject shared `RAPIDAPI_KEY` in providers; never expose to client.
+  - [ ] 8.3 Add trial init on first sign-in; store `trialStartedAt` and `trialEndsAt` (+7 days).
+  - [ ] 8.4 Implement `assertAccessAllowed(userId)` and gate `GET /api/returns` (etc.).
+  - [ ] 8.5 Add `POST /api/billing/checkout` and `POST /api/billing/portal`.
+  - [ ] 8.6 Add `POST /api/stripe/webhooks` with subscription lifecycle handling.
+  - [ ] 8.7 Add `GET /api/user/status` for client UI.
+  - [ ] 8.8 UI: Access panel + pre-sign-in trial message; remove key UI.
+  - [ ] 8.9 Rate limits: 30 rpm trial, 120 rpm paid; per-IP soft caps; device cookie.
+  - [ ] 8.10 Docs: update `README.md` and `PROJECT.md` with envs and setup.
