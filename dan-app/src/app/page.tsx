@@ -1,4 +1,4 @@
-import { auth, signIn } from "@/auth";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { marketingCopy } from "@/lib/marketingCopy";
 
@@ -20,16 +20,12 @@ export default async function Home() {
                 <li><a className="hover:underline" href={marketingCopy.links.pricing}>Pricing</a></li>
               </ul>
             </nav>
-            <form
-              action={async () => {
-                "use server";
-                await signIn("google", { redirectTo: "/returns", prompt: "select_account" });
-              }}
+            <a
+              href="/login"
+              className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-3 py-2 text-sm font-medium hover:bg-indigo-700 transition"
             >
-              <button className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-3 py-2 text-sm font-medium hover:bg-indigo-700 transition">
-                {marketingCopy.ctas.primary}
-              </button>
-            </form>
+              {marketingCopy.ctas.primary}
+            </a>
           </header>
           <main id="main-content" className="mt-8">
             <section aria-labelledby="hero-heading" className="rounded-xl border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 shadow-sm p-6">
@@ -40,16 +36,12 @@ export default async function Home() {
                 {marketingCopy.subhead}
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <form
-                  action={async () => {
-                    "use server";
-                    await signIn("google", { redirectTo: "/returns", prompt: "select_account" });
-                  }}
+                <a
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-indigo-700 transition"
                 >
-                  <button className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-indigo-700 transition">
-                    {marketingCopy.ctas.primary}
-                  </button>
-                </form>
+                  {marketingCopy.ctas.primary}
+                </a>
                 <a href={marketingCopy.links.methodology} className="text-sm text-indigo-700 hover:underline">
                   {marketingCopy.ctas.secondary}
                 </a>

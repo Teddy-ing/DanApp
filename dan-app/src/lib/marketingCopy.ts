@@ -25,7 +25,7 @@ export const marketingCopy = {
     pricing: "#pricing-usage",
   },
   ctas: {
-    primary: "Sign in with Google (free)",
+    primary: "Log in with Google",
     secondary: "See how DRIP is computed",
   },
 };
