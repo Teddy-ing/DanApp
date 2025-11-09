@@ -11,7 +11,7 @@ export type DripInputSeries = {
 
 export type DripOptions = {
   base: number;
-  horizon: "5y" | "max";
+  horizon: "1y" | "3y" | "5y" | "max";
 };
 
 export type DripOutput = {
@@ -48,13 +48,13 @@ function clampIsoToValidDate(isoYmd: string): string {
   return `${year}-${mm}-28`;
 }
 
-function nyFiveYearsAgoBoundaryIso(nyTodayIso: string): string {
+function nyYearsAgoBoundaryIso(years: number, nyTodayIso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(nyTodayIso);
   if (!m) return nyTodayIso;
   const year = Number(m[1]);
   const month = m[2];
   const day = m[3];
-  const boundary = `${String(year - 5).padStart(4, "0")}-${month}-${day}`;
+  const boundary = `${String(year - years).padStart(4, "0")}-${month}-${day}`;
   return clampIsoToValidDate(boundary);
 }
 
@@ -155,7 +155,9 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
   }
 
   const nyToday = nyTodayDateString();
-  const startBoundaryIso = options.horizon === "5y" ? nyFiveYearsAgoBoundaryIso(nyToday) : undefined;
+  const horizonYears: Record<Exclude<DripOptions["horizon"], "max">, number> = { "1y": 1, "3y": 3, "5y": 5 };
+  const startBoundaryIso =
+    options.horizon === "max" ? undefined : nyYearsAgoBoundaryIso(horizonYears[options.horizon], nyToday);
 
   // Sanitize inputs per symbol (lenient)
   const sanitized = inputs.map((s) => ({

@@ -4,11 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 
 type SaveResponse = { ok?: boolean; error?: { message: string } };
 type StatusResponse = { hasKey: boolean } | { error: { message: string } };
+type KeyModalProps = {
+  sharedKeyActive: boolean;
+};
 
-export default function KeyModal() {
+export default function KeyModal({ sharedKeyActive }: KeyModalProps) {
   const [open, setOpen] = useState(false);
   const [rapidapiKey, setRapidapiKey] = useState('');
-  const [hasKey, setHasKey] = useState<boolean | null>(null);
+  const [hasKey, setHasKey] = useState<boolean | null>(sharedKeyActive ? false : null);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,17 +44,33 @@ export default function KeyModal() {
   }, [toast]);
 
   const statusBadge = useMemo(() => {
-    if (hasKey === null) return null;
-    return hasKey ? (
-      <span className="ml-2 inline-flex items-center rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 px-2 py-0.5 text-xs">
-        Key saved
-      </span>
-    ) : (
+    if (hasKey === null) {
+      return (
+        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 text-gray-800 dark:bg-neutral-800 dark:text-gray-200 px-2 py-0.5 text-xs">
+          Checking…
+        </span>
+      );
+    }
+    if (hasKey) {
+      return (
+        <span className="ml-2 inline-flex items-center rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200 px-2 py-0.5 text-xs">
+          Personal key saved
+        </span>
+      );
+    }
+    if (sharedKeyActive) {
+      return (
+        <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-100 px-2 py-0.5 text-xs">
+          Shared key active
+        </span>
+      );
+    }
+    return (
       <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 text-gray-800 dark:bg-neutral-800 dark:text-gray-200 px-2 py-0.5 text-xs">
         No key
       </span>
     );
-  }, [hasKey]);
+  }, [hasKey, sharedKeyActive]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,7 +87,7 @@ export default function KeyModal() {
         throw new Error(data?.error?.message || 'Failed to save key');
       }
       setHasKey(true);
-      setToast('RapidAPI key saved');
+      setToast('Personal RapidAPI key saved');
       setOpen(false);
       setRapidapiKey('');
       if (data?.persisted === false) {
@@ -88,13 +107,9 @@ export default function KeyModal() {
         onClick={() => setOpen(true)}
         className="inline-flex items-center rounded-md border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 px-3 py-1.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 transition"
       >
-        Connect RapidAPI key
+        {sharedKeyActive ? 'Override RapidAPI key' : 'Connect RapidAPI key'}
       </button>
-      {hasKey === null ? (
-        <span className="ml-2 inline-flex items-center rounded-full bg-gray-100 text-gray-800 dark:bg-neutral-800 dark:text-gray-200 px-2 py-0.5 text-xs">Checking…</span>
-      ) : (
-        statusBadge
-      )}
+      {statusBadge}
 
       {toast && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-black text-white dark:bg-white dark:text-black px-3 py-2 text-sm shadow">
@@ -108,7 +123,9 @@ export default function KeyModal() {
           <div className="relative w-full max-w-md rounded-xl border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 shadow-lg p-6 mx-4">
             <h2 className="text-base font-semibold">Connect RapidAPI key</h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Paste your RapidAPI key. It is encrypted and stored securely on the server.
+              {sharedKeyActive
+                ? 'A shared RapidAPI key is already configured for all users. Saving your own key overrides it just for your account.'
+                : 'Paste your RapidAPI key. It is encrypted and stored securely on the server.'}
             </p>
             <form onSubmit={onSubmit} className="mt-4 space-y-3">
               <input

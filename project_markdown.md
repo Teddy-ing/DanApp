@@ -12,7 +12,7 @@ Let users enter **one–five U.S. stock tickers** and see, for every historical 
 
 - **Front end:** Next.js (React) on Vercel  
 - **Auth:** Google OAuth via NextAuth.js  
-- **Data:** Yahoo Finance via RapidAPI (**user supplies their own RapidAPI key**)  
+- **Data:** Yahoo Finance via RapidAPI (**shared `RAPIDAPI_SHARED_KEY`; users can optionally store a personal override via `/api/user/key`**)  
 - **Market scope:** **U.S. equities only (USD)**  
 - **Dividends:** If Yahoo records are incomplete → **scrape issuer Investor-Relations site** as fallback  
 - **DRIP model:** Reinvest **on payment date at next trading-day open**; fractional shares; adjust for **splits**  
@@ -34,7 +34,9 @@ Let users enter **one–five U.S. stock tickers** and see, for every historical 
   - `/api/prices` — adjusted daily candles + splits  
   - `/api/dividends` — dividend history  
   - `/api/returns` — orchestrates prices+dividends and runs DRIP calc  
-  - `/api/user/key` — save/get user RapidAPI key (encrypted at rest)
+  - `/api/user/key` — save/get optional personal RapidAPI key (encrypted at rest; overrides shared key)
+  - `/api/stats/percentile` — percentile ranks for 1y/3y/5y DRIP returns
+  - `/api/precompute` — Vercel cron endpoint to warm DRIP caches (`precomp:{symbol}:{horizon}`)
 - **Adapters:** `providers/yahoo.ts` (RapidAPI), `scrapers/ir.ts` (Cheerio)  
 - **Core math:** `lib/drip.ts` (pure, unit-tested)  
 - **Cache:** Upstash Redis (global) with TTLs (see §3.3)  
@@ -47,7 +49,7 @@ flowchart LR
   RET --> DV[/api/dividends/]
   PR --> R((Upstash Redis))
   DV --> R
-  PR -- miss --> YF[(Yahoo via RapidAPI<br/>(user's key))]
+  PR -- miss --> YF[(Yahoo via RapidAPI<br/>(shared key or user override))]
   DV -- miss/gap --> IR[Issuer IR Scraper]
   YF --> R
   IR --> R
@@ -93,10 +95,10 @@ Internal API from UI is discouraged; UI should call /api/returns only
 These exist for modular testing and orchestration
 
 3) Data & Caching
-3.1 Yahoo via RapidAPI (user key)
+3.1 Yahoo via RapidAPI (shared key with optional user override)
 Endpoints: daily adjusted candles, splits, dividends
 
-Header: X-RapidAPI-Key set to the logged-in user’s stored key
+Header: X-RapidAPI-Key set to `RAPIDAPI_SHARED_KEY` unless the user has saved a personal key (override)
 
 Reject obviously invalid tickers early (regex + provider 404 check)
 
@@ -115,6 +117,8 @@ Dividends (YF): yf:{symbol}:divs:v1 — 24h
 IR scrape: ir:{symbol}:divs:v1 — 7d
 
 User key: user:{id}:rapidapiKey — no TTL
+
+Precompute snapshots: precomp:{symbol}:{horizon} — 6h
 
 Rate-limit counters: rl:{userId}:{window} — sliding window
 
@@ -176,7 +180,7 @@ States:
 
 Not logged in → Google Sign-In
 
-No RapidAPI key → guided modal to paste/save key
+Shared key active → modal optional if user wants to save their own RapidAPI key override
 
 Footer: attribution & disclaimer
 
@@ -211,8 +215,8 @@ Login → save key → run AAPL/MSFT with base = 1500 → verify chart & cache w
 8) Deployment & Ops (non-code checklist)
 Vercel project + env vars:
 
-NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
-UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
+RAPIDAPI_SHARED_KEY, NEXTAUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET,
+UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN, PRECOMPUTE_CRON_TOKEN
 
 Upstash: create Global Redis; copy REST URL/TOKEN
 
@@ -233,8 +237,18 @@ For informational purposes only. Not investment advice.
 - Concept A (text-first) for unauthenticated users with a single primary CTA (Google sign-in).
 - Primary CTA routes to `/login`, which presents a “Continue with Google” flow and terms acknowledgement.
 - Anchors: `#methodology`, `#reliability`, `#security`, `#faq` including `#pricing-usage` for the Pricing link.
-- Copy centralized in `src/lib/marketingCopy.ts`; scope/exclusions and usage note (50 one-time actions; pressing "Fetch returns" is an action).
+- Copy centralized in `src/lib/marketingCopy.ts`; scope/exclusions and interim usage note explaining that billing is deferred and all features remain open.
 - Footer links point to live `/terms` and `/privacy` pages describing The RND Group policies.
 
 Scraping: respect robots.txt; IR fallback cached 7 days to minimize load.
+
+11) Precompute job
+- `lib/precompute.ts` builds DRIP growth + drawdown snapshots (base 1000) and stores them under `precomp:{symbol}:{horizon}` with a 6-hour TTL.
+- `/api/precompute` (GET/POST) accepts `symbols` (required) and optional `horizons` (`1y`,`3y`,`5y`,`max`). Requires `Authorization: Bearer ${PRECOMPUTE_CRON_TOKEN}`.
+- Schedule a Vercel Cron (daily) that hits this route with the shared RapidAPI key configured so `/api/returns` can serve from cache and populate percentiles later.
+
+12) Billing backlog (deferred)
+- Stripe checkout, subscription lifecycle webhooks, and plan gating are paused (tracked as task `B1`).
+- Whop OAuth/webhooks, plan precedence, and UI affordances remain TODO (task `B2`).
+- Keep `RAPIDAPI_SHARED_KEY` configured in every environment and leave upsell copy disabled until billing work resumes.
 

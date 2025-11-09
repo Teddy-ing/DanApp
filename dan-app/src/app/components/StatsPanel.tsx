@@ -26,11 +26,47 @@ type SymbolStats = {
   allTime: StatsAgg;
 };
 
+type PercentileStat = {
+  percentile: number | null;
+  currentReturn: number | null;
+  sampleSize: number;
+};
+
 export default function StatsPanel(props: { symbols: string[]; horizon: Horizon; custom: CustomRange }) {
   const { symbols, horizon, custom } = props;
   const enabled = symbols.length > 0;
 
+  const horizonOrder: Array<"1y" | "3y" | "5y"> = ["1y", "3y", "5y"];
+  const horizonLabels: Record<"1y" | "3y" | "5y", string> = {
+    "1y": "1-year",
+    "3y": "3-year",
+    "5y": "5-year",
+  };
+
+  const percentilesQuery = useQuery({
+    queryKey: ["stats.percentile", { symbols }],
+    enabled,
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.set("symbols", symbols.join(","));
+      const res = await fetch(`/api/stats/percentile?${params.toString()}`, { cache: "no-store" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error?.message || "Percentile request failed");
+      return data as { items: Array<{ symbol: string; horizons: Record<"1y" | "3y" | "5y", PercentileStat> }> };
+    },
+  });
+
+  const percentilesBySymbol = useMemo(() => {
+    if (!percentilesQuery.isSuccess) return new Map<string, Record<"1y" | "3y" | "5y", PercentileStat>>();
+    const map = new Map<string, Record<"1y" | "3y" | "5y", PercentileStat>>();
+    for (const item of percentilesQuery.data.items) {
+      map.set(item.symbol, item.horizons);
+    }
+    return map;
+  }, [percentilesQuery.data, percentilesQuery.isSuccess]);
+
   const pct = (v: number | null) => (v == null ? "—" : `${(v * 100).toFixed(1)}%`);
+  const percentDetailed = (v: number | null) => (v == null ? "n/a" : `${(v * 100).toFixed(2)}%`);
   const usd = useMemo(() => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }), []);
 
   const query = useQuery({
@@ -62,9 +98,40 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
         <h3 className="text-sm font-medium">Stats</h3>
         {query.isLoading && <div className="text-sm">Loading…</div>}
         {query.error && <div className="text-sm text-red-600 dark:text-red-400">{(query.error as Error).message}</div>}
-        {query.isSuccess && query.data.items.map((it) => (
+        {percentilesQuery.error && (
+          <div className="text-xs text-red-600 dark:text-red-400">{(percentilesQuery.error as Error).message}</div>
+        )}
+        {query.isSuccess && query.data.items.map((it) => {
+          const percentiles = percentilesBySymbol.get(it.symbol);
+          return (
           <div key={it.symbol} className="">
             <div className="text-sm mb-1">{it.symbol}</div>
+            {percentilesQuery.isLoading && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Loading percentiles…</div>
+            )}
+            {percentiles && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {horizonOrder.map((id) => {
+                  const data = percentiles[id];
+                  if (!data) return null;
+                  const badgeText = data.percentile == null ? "—" : `${data.percentile.toFixed(1)}p`;
+                  const tooltip =
+                    data.percentile == null
+                      ? `Not enough data for ${horizonLabels[id]} percentile`
+                      : `${horizonLabels[id]} total return ${percentDetailed(data.currentReturn)} • Percentile ${data.percentile.toFixed(1)} • Sample ${data.sampleSize}`;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-100 px-2 py-0.5 text-xs font-medium"
+                      title={tooltip}
+                    >
+                      <span>{id.toUpperCase()}</span>
+                      <span>{badgeText}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
             <table className="w-full text-sm border-collapse table-auto border border-black/10 dark:border-white/15">
               <thead>
                 <tr>
@@ -215,7 +282,8 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
               </tbody>
             </table>
           </div>
-        ))}
+          </div>
+        )})}
         {query.isSuccess && (
           <div className="mt-4 rounded-xl border border-black/10 dark:border-white/15 p-4 sm:p-5 bg-white dark:bg-neutral-900">
             <div className="text-sm font-medium mb-2">Definitions</div>

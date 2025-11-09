@@ -3,7 +3,7 @@ import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
 import { parseSymbols } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
-import { getDecryptedRapidApiKey } from "@/lib/userKey";
+import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 import { checkRateLimit } from "@/lib/rateLimit";
 
 type Range = "5y" | "1y" | "max";
@@ -30,10 +30,15 @@ export async function GET(req: NextRequest) {
   if (!userId) return jsonError(401, "Unauthorized");
   let rapidApiKey: string;
   try {
-    const key = await getDecryptedRapidApiKey(userId);
-    if (!key) return jsonError(400, "RapidAPI key not set. Save your key first.");
+    const { key } = await resolveRapidApiKey(userId);
     rapidApiKey = key;
   } catch (e) {
+    if (e instanceof RapidApiKeyMissingError) {
+      if (e.reason === "shared_missing") {
+        return jsonError(500, "Server misconfiguration: configure RAPIDAPI_SHARED_KEY or enable user RapidAPI keys.");
+      }
+      return jsonError(400, "RapidAPI key not set. Save your key first.");
+    }
     const code = (e as Error)?.message || '';
     if (code === 'MISCONFIG_SECRET') {
       return jsonError(500, 'Server misconfiguration: missing AUTH_SECRET/NEXTAUTH_SECRET');

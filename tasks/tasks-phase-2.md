@@ -95,7 +95,7 @@ This document supersedes the earlier trial model for future work. Phase 0 replac
 ### APIs (Next.js routes)
 - `GET /api/returns/forward?symbol=…&horizon=…&benchmark=…`
 - `GET /api/stats/percentile?symbol=…&horizon=…`
-- `POST /api/views` / `GET /api/views`h
+- `POST /api/views` / `GET /api/views`
 - `POST /api/alerts` / `PATCH /api/alerts/:id`
 - Worker/cron to evaluate alerts and send emails
 - `GET /api/export/png|csv?view_id=…` (XLSX export route remains; CSV added; PNG generated server‑side)
