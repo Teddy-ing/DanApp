@@ -54,8 +54,9 @@ export default function ReturnsHistogram({ cells, metric, stats, onHoverRange }:
   const labelFormatter = (value: number) => `${(value * 100).toFixed(0)}%`;
 
   return (
-    <div className="w-full h-64">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full">
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={bins}
           margin={{ left: 16, right: 16, top: 8, bottom: 8 }}
@@ -100,6 +101,7 @@ export default function ReturnsHistogram({ cells, metric, stats, onHoverRange }:
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+      </div>
       <div className="mt-2 text-xs text-gray-600 dark:text-gray-300 flex flex-wrap gap-4">
         {mean != null && <div>Mean: {formatPercent(mean)}</div>}
         {median != null && <div>Median: {formatPercent(median)}</div>}

@@ -291,7 +291,7 @@ export default function ReturnsView(props: {
       {!lightbox.open && pricesQuery.isSuccess && (
         <div>
           <div className="text-sm mb-2">{symbols.length > 1 ? `Prices of ${symbolsDisplay}` : `Price of ${symbolsDisplay}`}</div>
-          <div onDoubleClick={() => setLightbox({ open: true, which: 'price' })}>
+          <div className="mb-4" onDoubleClick={() => setLightbox({ open: true, which: 'price' })}>
           <PriceChart
             items={pricesQuery.data.items.map((i) => ({
               symbol: i.symbol,

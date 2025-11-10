@@ -2,6 +2,7 @@
 **Version:** 0.4 (Aug 7, 2025)  
 **Owner:** Theodore Ingberman
 
+**Update (Nov 11, 2025, later):** Reflowed the returns histogram so its summary stats sit below the chart, preventing overlap with the price panel.
 **Update (Nov 11, 2025):** Deferred effect-driven state updates to microtasks to keep React Compiler happy (lightbox, returns shell/view) and trimmed unused theme toggle stub.
 **Update (Nov 10, 2025, late pm):** Corrected monthly heatmap horizon filter so 1y/3y views stay within range and added regression test.
 **Update (Nov 10, 2025, pm):** Restored pnpm workspace config and squashed React lint regressions in chart panels so installs and builds run cleanly.
