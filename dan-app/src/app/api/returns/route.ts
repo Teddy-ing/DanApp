@@ -8,6 +8,7 @@ import { auth } from "@/auth";
 import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { computeDrawdownFromGrowth, getOrComputePrecomputed, mapGrowthToValueAndPct } from "@/lib/precompute";
+import { toNyDateString } from "@/lib/calendar";
 
 type Horizon = "5y" | "max";
 type CustomSpan = { period1: number; period2?: number };
@@ -87,9 +88,18 @@ export async function GET(req: NextRequest) {
 
   const horizon = parseHorizon(url.searchParams.get("horizon"));
   const base = parseBase(url.searchParams.get("base"));
-  const period1 = url.searchParams.get("period1");
-  const period2 = url.searchParams.get("period2");
-  const customSpan = period1 ? { period1: Number(period1), period2: period2 ? Number(period2) : undefined } : undefined;
+  const period1Raw = url.searchParams.get("period1");
+  const period2Raw = url.searchParams.get("period2");
+  const period1 = period1Raw != null ? Number(period1Raw) : undefined;
+  const period2 = period2Raw != null ? Number(period2Raw) : undefined;
+  const customSpan =
+    period1 != null && Number.isFinite(period1) && period1 > 0
+      ? {
+          period1: Math.floor(period1),
+          period2:
+            period2 != null && Number.isFinite(period2) && period2 >= period1 ? Math.floor(period2) : undefined,
+        }
+      : undefined;
   const benchmarkParam = url.searchParams.get("benchmark");
   let benchmarkSymbol: string | null = "SPY";
   if (benchmarkParam && benchmarkParam.trim().length > 0) {
@@ -151,6 +161,16 @@ async function computeOnDemandPayload(params: {
   const includeBenchmark =
     params.benchmarkSymbol && !uniqueSymbols.includes(params.benchmarkSymbol) ? params.benchmarkSymbol : null;
   const span = params.customSpan ?? params.horizon;
+  const rangeOverride =
+    params.customSpan && Number.isFinite(params.customSpan.period1)
+      ? {
+          start: toNyDateString(params.customSpan.period1),
+          end:
+            params.customSpan.period2 != null && Number.isFinite(params.customSpan.period2)
+              ? toNyDateString(params.customSpan.period2)
+              : undefined,
+        }
+      : undefined;
 
   const loadOrder = includeBenchmark ? [...uniqueSymbols, includeBenchmark] : [...uniqueSymbols];
   const seriesInputs = await Promise.all(
@@ -161,7 +181,11 @@ async function computeOnDemandPayload(params: {
     })
   );
 
-  const drip = computeDripSeries(seriesInputs, { base: params.base, horizon: params.horizon });
+  const drip = computeDripSeries(seriesInputs, {
+    base: params.base,
+    horizon: params.horizon,
+    rangeOverride,
+  });
   const rawMap = new Map<string, { value: Array<number | null>; pct: Array<number | null> }>();
   drip.series.forEach((series) => {
     rawMap.set(series.symbol, { value: series.value, pct: series.pct });

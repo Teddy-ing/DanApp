@@ -12,6 +12,7 @@ export type DripInputSeries = {
 export type DripOptions = {
   base: number;
   horizon: "1y" | "3y" | "5y" | "max";
+  rangeOverride?: { start?: string; end?: string };
 };
 
 export type DripOutput = {
@@ -156,8 +157,10 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
 
   const nyToday = nyTodayDateString();
   const horizonYears: Record<Exclude<DripOptions["horizon"], "max">, number> = { "1y": 1, "3y": 3, "5y": 5 };
-  const startBoundaryIso =
+  const horizonBoundaryIso =
     options.horizon === "max" ? undefined : nyYearsAgoBoundaryIso(horizonYears[options.horizon], nyToday);
+  const startBoundaryIso = options.rangeOverride?.start ?? horizonBoundaryIso;
+  const endBoundaryIso = options.rangeOverride?.end ?? nyToday;
 
   // Sanitize inputs per symbol (lenient)
   const sanitized = inputs.map((s) => ({
@@ -170,7 +173,7 @@ export function computeDripSeries(inputs: DripInputSeries[], options: DripOption
   // Build union trading calendar across symbols based on provider data
   const calendar = buildTradingCalendar(
     sanitized.map((s) => s.candles),
-    { startDate: startBoundaryIso, endDate: nyToday }
+    { startDate: startBoundaryIso, endDate: endBoundaryIso }
   );
 
   if (calendar.length === 0) {

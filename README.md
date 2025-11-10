@@ -73,7 +73,6 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Returns view now overlays a benchmark line (default `SPY`, override via the `benchmark` query) and adds a compact excess-return mini chart so users can judge absolute performance plus beat/lag at a glance (≈58 words).
 - Monthly analytics section adds a clickable heatmap (1y/3y/5y horizons) and linked histogram—hover bins to spotlight cells, click a month to highlight the forward-returns chart, and toggle excess vs SPY when the benchmark overlay is present.
 - Drawdown view: new chart plots per-symbol peak-to-trough drawdowns (with optional benchmark overlay) and syncs with the highlight state used by the returns and heatmap views.
-- Saved Views panel: store named configurations (symbols, horizon, custom range, mode) per user, quickly reapply them, and generate/share/revoke permalink URLs (`/returns?share=...`) for teammates.
 - Inputs: Button handlers validate pending input and block duplicates/over-limit; buttons no longer stay disabled after a validation error.
   - Fix: Removed error-based disabled state so users can retry immediately.
 - Charts: When embedded in the lightbox, `ReturnsChart` and `ForwardReturnsChart` correctly respect `height="full"`.
@@ -156,16 +155,6 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 Notes: Intended for orchestration/testing. Uses cached provider data when available.
 Rate limiting: All endpoints enforce 30 requests/minute per user (user derived from `x-user-id` or client IP). On exceed, respond `429` with `Retry-After` seconds.
-
-### Saved views API (auth required unless noted)
-
-- `GET /api/views` — list saved views for the signed-in user.
-- `POST /api/views` — create a new view; body mirrors `symbols`, `base`, `horizon`, `custom`, `viewMode`, `name`.
-- `PATCH /api/views/:id` — update name/config for an existing view.
-- `DELETE /api/views/:id` — remove a saved view (and any active share link).
-- `POST /api/views/:id/share` — enable sharing; returns `{ shareId, shareUrl }`.
-- `DELETE /api/views/:id/share` — revoke the share link.
-- `GET /api/views/share/:shareId` — fetch a shared view configuration (no auth).
 
 ### POST `/api/user/key` (auth required, optional override)
 

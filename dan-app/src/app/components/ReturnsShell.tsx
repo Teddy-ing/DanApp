@@ -1,45 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import InputsPanel from '@/app/components/InputsPanel';
 import ReturnsView from '@/app/components/ReturnsView';
 import DividendsPanel from '@/app/components/DividendsPanel';
 import StatsPanel from '@/app/components/StatsPanel';
-import SavedViewsPanel from '@/app/components/SavedViewsPanel';
-import type { SavedViewConfig, SavedViewSummary } from '@/types/savedView';
 
-type ReturnsShellProps = {
-  initialConfig?: SavedViewConfig;
-  initialShareId?: string;
-};
-
-export default function ReturnsShell(props: ReturnsShellProps) {
+export default function ReturnsShell() {
   const [symbols, setSymbols] = useState<string[]>([]);
   const [base, setBase] = useState<number>(1000);
   const [horizon, setHorizon] = useState<'5y' | 'max'>('5y');
   const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>({ enabled: false, start: '', end: '' });
   const [view, setView] = useState<'returns' | 'stats'>('returns');
   const hasQuery = symbols.length > 0;
-  const initialAppliedRef = useRef(false);
-
-  useEffect(() => {
-    if (initialAppliedRef.current) return;
-    if (!props.initialConfig || props.initialConfig.symbols.length === 0) return;
-    initialAppliedRef.current = true;
-    setSymbols(props.initialConfig.symbols);
-    setBase(props.initialConfig.base);
-    setHorizon(props.initialConfig.horizon);
-    setCustom(props.initialConfig.custom);
-    setView(props.initialConfig.viewMode);
-  }, [props.initialConfig]);
-
-  useEffect(() => {
-    if (!props.initialShareId) return;
-    if (typeof window === 'undefined') return;
-    const url = new URL(window.location.href);
-    url.searchParams.delete('share');
-    window.history.replaceState({}, '', url.toString());
-  }, [props.initialShareId]);
 
   // Master left panel open/close state with responsive default and persistence
   // SSR-safe default (collapsed); hydrate to actual preference after mount
@@ -95,21 +68,6 @@ export default function ReturnsShell(props: ReturnsShellProps) {
 
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const handleApplySavedView = (savedView: SavedViewSummary) => {
-    setSymbols(savedView.symbols);
-    setBase(savedView.base);
-    setHorizon(savedView.horizon);
-    setCustom(savedView.custom);
-    setView(savedView.viewMode);
-  };
-
-  const savedViewPanel = (
-    <SavedViewsPanel
-      current={{ symbols, base, horizon, custom, viewMode: view }}
-      onApply={handleApplySavedView}
-    />
-  );
-
   return (
     <div className="w-full px-4">
       {!hasQuery ? (
@@ -126,9 +84,6 @@ export default function ReturnsShell(props: ReturnsShellProps) {
             setCustom(custom);
             setView('stats');
           }} />
-          <div className="mt-4">
-            {savedViewPanel}
-          </div>
         </div>
       ) : (
         <div className={"max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-[auto_1fr] gap-8"}>
@@ -166,9 +121,6 @@ export default function ReturnsShell(props: ReturnsShellProps) {
                     <DividendsPanel symbols={symbols} horizon={horizon} custom={custom} />
                   </div>
                 )}
-                <div className="mt-4">
-                  {savedViewPanel}
-                </div>
               </div>
             </div>
           )}

@@ -2,6 +2,7 @@
 **Version:** 0.4 (Aug 7, 2025)  
 **Owner:** Theodore Ingberman
 
+**Update (Nov 10, 2025):** Custom-span DRIP requests now honor their exact date window, preventing out-of-range returns from skewing forward-return stats or charts.
 **Update (Nov 8, 2025):** Login now routes through a confirmation screen before Google OAuth; dedicated Terms and Privacy pages outline The RND Group’s policies for better transparency.
 
 Let users enter **one–five U.S. stock tickers** and see, for every historical trading day (or last 5y, whichever is longer), the **$ value** and **% return** of a user-chosen **base investment** (default $1,000) made on that day **with dividends reinvested** at the **next market-open VWAP**. Multi-symbol comparison on the same chart.
@@ -37,10 +38,6 @@ Let users enter **one–five U.S. stock tickers** and see, for every historical 
   - `/api/user/key` — save/get optional personal RapidAPI key (encrypted at rest; overrides shared key)
   - `/api/stats/percentile` — percentile ranks for 1y/3y/5y DRIP returns
   - `/api/precompute` — Vercel cron endpoint to warm DRIP caches (`precomp:{symbol}:{horizon}`)
-  - `/api/views` — saved views CRUD (list/create)  
-  - `/api/views/[id]` — update/delete a saved view  
-  - `/api/views/[id]/share` — enable/disable sharing; returns permalink slug  
-  - `/api/views/share/[shareId]` — fetch shared configuration (no auth required)
 - **Adapters:** `providers/yahoo.ts` (RapidAPI), `scrapers/ir.ts` (Cheerio)  
 - **Core math:** `lib/drip.ts` (pure, unit-tested)  
 - **Cache:** Upstash Redis (global) with TTLs (see §3.3)  
@@ -182,7 +179,6 @@ Recharts multi-line chart with $ and % view toggle and benchmark overlay
   - Benchmark line: returns chart draws a dashed overlay for the selected benchmark (default SPY) and a companion mini chart highlights per-symbol excess vs the benchmark in $/% toggles.
 - Monthly analytics: 1y/3y/5y heatmap (first trading day per month) and linked histogram live in `ReturnsView`. Clicking a cell syncs the forward returns chart; hovering a bin highlights its months; an excess-vs-SPY toggle appears when the benchmark overlay is active.
 - Drawdown chart: `ReturnsView` renders a dedicated peak-to-trough drawdown line chart (with optional SPY overlay) driven by the enhanced `/api/returns` payload.
-- Saved views: users can name and store configurations (symbols/base/horizon/custom + returns/stats mode), reapply them instantly, and generate or revoke shareable permalinks (`/returns?share=...`) that hydrate the state for collaborators.
 
 UX toggles
 - Left panel (Symbols/Inputs + Dividends) supports a master collapse with chevron + “Hide/Show” text. Defaults: open on desktop (md+), closed on mobile. State persists via localStorage (`ui.leftPanel.open`). The panel remains mounted; width animates from 320px to a slim 12px gutter for smooth chart resizing.
