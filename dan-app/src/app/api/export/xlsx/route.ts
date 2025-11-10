@@ -176,7 +176,6 @@ async function buildWorkbook(
     for (let r = firstDataRow; r <= lastRow; r += 1) {
       const isFirst = r === firstDataRow;
       const prevTotalSharesRef = `H${r - 1}`;
-      const _splitRef = `E${r}`; // retained for column shape; unused since prices are split-adjusted
       const openRef = `B${r}`;
       const closeRef = `C${r}`;
       const prevDivRef = `D${r - 1}`;

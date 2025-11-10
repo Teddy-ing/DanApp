@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 type Props = {
@@ -13,16 +13,11 @@ type Props = {
 
 export default function ChartLightbox(props: Props) {
   const { open, onClose, title, subtitle, children } = props;
-  const [mounted, setMounted] = useState(false);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const draggingRef = useRef<{ dragging: boolean; startX: number; startY: number; startOffsetX: number; startOffsetY: number }>({ dragging: false, startX: 0, startY: 0, startOffsetX: 0, startOffsetY: 0 });
   const frameRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -79,11 +74,12 @@ export default function ChartLightbox(props: Props) {
     setScale((s) => (s > 1 ? 1 : 2));
   };
 
-  const content = useMemo(() => {
-    if (!open) return null;
-    return (
-      <div className="fixed inset-0 z-[1000] clb-portal">
-        <style>{`@media print {
+  if (typeof document === "undefined") return null;
+  if (!open) return null;
+
+  const content = (
+    <div className="fixed inset-0 z-[1000] clb-portal">
+      <style>{`@media print {
   /* Hide everything except the lightbox portal */
   body > :not(.clb-portal) { display: none !important; }
   .clb-backdrop, .clb-controls { display: none !important; }
@@ -95,55 +91,53 @@ export default function ChartLightbox(props: Props) {
   .print-transform { transform: none !important; }
   .print-abs { position: static !important; left: auto !important; top: auto !important; }
 }`}</style>
-        <div className="absolute inset-0 bg-black/80 clb-backdrop" onClick={onClose} />
-        <div className="absolute inset-0 flex flex-col clb-root" onClick={(e) => { if (frameRef.current && !frameRef.current.contains(e.target as Node)) onClose(); }}>
-          <div className="flex items-center justify-end gap-2 p-3 clb-controls" onClick={(e) => e.stopPropagation()}>
-            <button type="button" onClick={() => window.print()} className="rounded-md bg-white text-black px-3 py-1.5 text-sm hover:bg-black/10">
-              Print
-            </button>
-            <button type="button" onClick={onClose} aria-label="Close" className="rounded-md bg-white text-black px-3 py-1.5 text-sm hover:bg-black/10">
-              ✕
-            </button>
-          </div>
-          <div className="px-4 pb-4 text-center select-none">
-            {title && <div className="text-white text-base font-medium mb-1">{title}</div>}
-            {subtitle && <div className="text-white/80 text-sm mb-3">{subtitle}</div>}
+      <div className="absolute inset-0 bg-black/80 clb-backdrop" onClick={onClose} />
+      <div className="absolute inset-0 flex flex-col clb-root" onClick={(e) => { if (frameRef.current && !frameRef.current.contains(e.target as Node)) onClose(); }}>
+        <div className="flex items-center justify-end gap-2 p-3 clb-controls" onClick={(e) => e.stopPropagation()}>
+          <button type="button" onClick={() => window.print()} className="rounded-md bg-white text-black px-3 py-1.5 text-sm hover:bg-black/10">
+            Print
+          </button>
+          <button type="button" onClick={onClose} aria-label="Close" className="rounded-md bg-white text-black px-3 py-1.5 text-sm hover:bg-black/10">
+            ✕
+          </button>
+        </div>
+        <div className="px-4 pb-4 text-center select-none">
+          {title && <div className="text-white text-base font-medium mb-1">{title}</div>}
+          {subtitle && <div className="text-white/80 text-sm mb-3">{subtitle}</div>}
+          <div
+            role="presentation"
+            className="relative mx-auto overflow-hidden rounded-lg bg-white/5 print-container"
+            style={{ width: "92vw", height: "82vh", cursor: isDragging ? "grabbing" : "grab" }}
+            ref={frameRef}
+            onWheel={onWheel}
+            onMouseDown={onMouseDown}
+            onMouseMove={onMouseMove}
+            onMouseUp={onMouseUp}
+            onMouseLeave={onMouseUp}
+            // Click handled via onMouseUp to disambiguate drag vs click
+          >
             <div
-              role="presentation"
-              className="relative mx-auto overflow-hidden rounded-lg bg-white/5 print-container"
-              style={{ width: "92vw", height: "82vh", cursor: isDragging ? "grabbing" : "grab" }}
-              ref={frameRef}
-              onWheel={onWheel}
-              onMouseDown={onMouseDown}
-              onMouseMove={onMouseMove}
-              onMouseUp={onMouseUp}
-              onMouseLeave={onMouseUp}
-              // Click handled via onMouseUp to disambiguate drag vs click
+              className="absolute left-1/2 top-1/2 will-change-transform print-abs print-transform"
+              style={{ transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${scale})`, transformOrigin: "center center" }}
             >
-              <div
-                className="absolute left-1/2 top-1/2 will-change-transform print-abs print-transform"
-                style={{ transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${scale})`, transformOrigin: "center center" }}
-              >
-                <div className="w-[92vw] h-[82vh] print-inner">
-                  {children(false)}
-                </div>
+              <div className="w-[92vw] h-[82vh] print-inner">
+                {children(false)}
               </div>
             </div>
-            {/* Print-only static container with explicit page-fitting size */}
-            <div className="print-only" style={{ display: 'none' }}>
-              <div style={{ width: '100%', height: '9in', margin: '0 auto' }}>
-                <div style={{ width: '100%', height: '100%' }}>
-                  {children(true)}
-                </div>
+          </div>
+          {/* Print-only static container with explicit page-fitting size */}
+          <div className="print-only" style={{ display: 'none' }}>
+            <div style={{ width: '100%', height: '9in', margin: '0 auto' }}>
+              <div style={{ width: '100%', height: '100%' }}>
+                {children(true)}
               </div>
             </div>
           </div>
         </div>
       </div>
-    );
-  }, [open, onClose, title, subtitle, children, scale, offset, isDragging]);
+    </div>
+  );
 
-  if (!mounted) return null;
   return createPortal(content, document.body);
 }
 

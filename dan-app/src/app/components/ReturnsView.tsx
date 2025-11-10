@@ -48,9 +48,13 @@ export default function ReturnsView(props: {
     };
   }, [lightbox.open, onLightboxOpenChange]);
   useEffect(() => {
-    if (lightbox.open && lightbox.which == null) {
-      setLightbox((prev) => ({ ...prev, which: 'returns' }));
-    }
+    if (!(lightbox.open && lightbox.which == null)) return;
+    Promise.resolve().then(() => {
+      setLightbox((prev) => {
+        if (!(prev.open && prev.which == null)) return prev;
+        return { ...prev, which: 'returns' };
+      });
+    });
   }, [lightbox.open, lightbox.which]);
   const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
   const enabled = symbols.length > 0;
@@ -86,13 +90,16 @@ export default function ReturnsView(props: {
   useEffect(() => {
     if (!returnsQuery.isSuccess) return;
     const primarySymbol = returnsQuery.data.series[0]?.symbol ?? null;
-    setSelectedSymbol((prev) => {
-      if (prev && returnsQuery.data.series.some((series) => series.symbol === prev)) return prev;
-      return primarySymbol;
+    const hasBenchmark = Boolean(returnsQuery.data.benchmark);
+    Promise.resolve().then(() => {
+      setSelectedSymbol((prev) => {
+        if (prev && returnsQuery.data.series.some((series) => series.symbol === prev)) return prev;
+        return primarySymbol;
+      });
+      if (!hasBenchmark && metricMode === "excess") {
+        setMetricMode("return");
+      }
     });
-    if (!returnsQuery.data.benchmark && metricMode === "excess") {
-      setMetricMode("return");
-    }
   }, [returnsQuery.data, returnsQuery.isSuccess, metricMode]);
 
   const pricesQuery = useQuery({

@@ -18,19 +18,20 @@ export default function ReturnsShell() {
   // SSR-safe default (collapsed); hydrate to actual preference after mount
   const [leftOpen, setLeftOpen] = useState<boolean>(false);
   useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('ui.leftPanel.open') : null;
-      if (stored === 'true' || stored === 'false') {
-        setLeftOpen(stored === 'true');
-        return;
+    if (typeof window === 'undefined') return;
+    Promise.resolve().then(() => {
+      try {
+        const stored = window.localStorage.getItem('ui.leftPanel.open');
+        if (stored === 'true' || stored === 'false') {
+          setLeftOpen(stored === 'true');
+          return;
+        }
+        const isMdUp = window.matchMedia?.('(min-width: 768px)').matches ?? false;
+        setLeftOpen(isMdUp);
+      } catch {
+        setLeftOpen(false);
       }
-      // Default: open on desktop (md+), closed on mobile
-      const isMdUp = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(min-width: 768px)').matches;
-      setLeftOpen(isMdUp);
-    } catch {
-      // Fallback to open
-      setLeftOpen(false);
-    }
+    });
   }, []);
 
   // Respond to window resizes so the panel matches media preference dynamically
