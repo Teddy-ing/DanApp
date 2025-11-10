@@ -72,6 +72,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Chart order updated: Forward Returns, Returns, then Price.
 - Returns view now overlays a benchmark line (default `SPY`, override via the `benchmark` query) and adds a compact excess-return mini chart so users can judge absolute performance plus beat/lag at a glance (≈58 words).
 - Monthly analytics section adds a clickable heatmap (1y/3y/5y horizons) and linked histogram—hover bins to spotlight cells, click a month to highlight the forward-returns chart, and toggle excess vs SPY when the benchmark overlay is present.
+- Drawdown view: new chart plots per-symbol peak-to-trough drawdowns (with optional benchmark overlay) and syncs with the highlight state used by the returns and heatmap views.
 - Inputs: Button handlers validate pending input and block duplicates/over-limit; buttons no longer stay disabled after a validation error.
   - Fix: Removed error-based disabled state so users can retry immediately.
 - Charts: When embedded in the lightbox, `ReturnsChart` and `ForwardReturnsChart` correctly respect `height="full"`.
@@ -198,9 +199,9 @@ Errors: Endpoints return structured errors with codes and, in development, detai
   "meta": { "symbols": ["AAPL", "MSFT"], "base": 1000, "horizon": "5y", "benchmark": "SPY" },
   "dates": ["2021-01-04", "2021-01-05"],
   "series": [
-    { "symbol": "AAPL", "value": [1000, 1003.2], "pct": [0, 0.0032] }
+    { "symbol": "AAPL", "value": [1000, 1003.2], "pct": [0, 0.0032], "drawdown": [0, -0.0025] }
   ],
-  "benchmark": { "symbol": "SPY", "value": [1000, 1001.1], "pct": [0, 0.0011] },
+  "benchmark": { "symbol": "SPY", "value": [1000, 1001.1], "pct": [0, 0.0011], "drawdown": [0, -0.0012] },
   "excess": [
     { "symbol": "AAPL", "value": [0, 2.1], "pct": [0, 0.0021] }
   ]

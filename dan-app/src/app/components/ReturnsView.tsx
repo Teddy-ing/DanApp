@@ -7,6 +7,7 @@ import PriceChart from "@/app/components/PriceChart";
 import ForwardReturnsChart from "@/app/components/ForwardReturnsChart";
 import ChartLightbox from "@/app/components/ChartLightbox";
 import ExcessMiniChart from "@/app/components/ExcessMiniChart";
+import DrawdownChart from "@/app/components/DrawdownChart";
 import MonthlyHeatmap from "@/app/components/MonthlyHeatmap";
 import ReturnsHistogram from "@/app/components/ReturnsHistogram";
 import { buildMonthlyAnalytics, type HeatmapHorizon } from "@/lib/monthlyAnalytics";
@@ -14,13 +15,14 @@ import { buildMonthlyAnalytics, type HeatmapHorizon } from "@/lib/monthlyAnalyti
 export type Horizon = "5y" | "max";
 export type CustomRange = { enabled: boolean; start: string; end: string };
 
-type ReturnsSeries = { symbol: string; value: (number | null)[]; pct: (number | null)[] };
+type ReturnsSeries = { symbol: string; value: (number | null)[]; pct: (number | null)[]; drawdown: (number | null)[] };
+type ExcessSeries = { symbol: string; value: (number | null)[]; pct: (number | null)[] };
 type ReturnsResponse = {
   meta: { symbols: string[]; base: number; horizon: Horizon; benchmark?: string | null };
   dates: string[];
   series: ReturnsSeries[];
   benchmark: ReturnsSeries | null;
-  excess: ReturnsSeries[];
+  excess: ExcessSeries[];
 };
 
 export default function ReturnsView(props: {
@@ -31,7 +33,7 @@ export default function ReturnsView(props: {
   onLightboxOpenChange?: (open: boolean) => void;
 }) {
   const { symbols, base, horizon, custom, onLightboxOpenChange } = props;
-  const [lightbox, setLightbox] = React.useState<{ open: boolean; which: 'forward' | 'returns' | 'price' | null }>({ open: false, which: null });
+  const [lightbox, setLightbox] = React.useState<{ open: boolean; which: 'forward' | 'returns' | 'drawdown' | 'price' | null }>({ open: false, which: null });
   const wasOpenRef = React.useRef<boolean>(false);
   const [heatmapHorizon, setHeatmapHorizon] = React.useState<HeatmapHorizon>("5y");
   const [metricMode, setMetricMode] = React.useState<"return" | "excess">("return");
@@ -162,6 +164,23 @@ export default function ReturnsView(props: {
           </div>
         </div>
       )}
+      {!lightbox.open && returnsQuery.isSuccess && (
+        <div className="mb-6">
+          <div className="text-sm mb-2">Drawdown from prior peak (reinvested dividends)</div>
+          <div onDoubleClick={() => setLightbox({ open: true, which: 'drawdown' })}>
+            <DrawdownChart
+              dates={returnsQuery.data.dates}
+              series={returnsQuery.data.series.map((s) => ({ symbol: s.symbol, drawdown: s.drawdown }))}
+              benchmark={
+                returnsQuery.data.benchmark
+                  ? { symbol: returnsQuery.data.benchmark.symbol, drawdown: returnsQuery.data.benchmark.drawdown }
+                  : undefined
+              }
+              highlightDate={highlightDate}
+            />
+          </div>
+        </div>
+      )}
       {!lightbox.open && returnsQuery.isSuccess && returnsQuery.data.benchmark && returnsQuery.data.excess.length > 0 && (
         <div className="mb-6">
           <div className="text-sm mb-2">Excess return versus {returnsQuery.data.benchmark.symbol}</div>
@@ -274,7 +293,17 @@ export default function ReturnsView(props: {
       <ChartLightbox
         open={lightbox.open}
         onClose={() => setLightbox({ open: false, which: null })}
-        title={lightbox.which === 'forward' ? 'Forward Returns' : lightbox.which === 'returns' ? 'Returns' : lightbox.which === 'price' ? 'Price' : undefined}
+        title={
+          lightbox.which === 'forward'
+            ? 'Forward Returns'
+            : lightbox.which === 'returns'
+            ? 'Returns'
+            : lightbox.which === 'drawdown'
+            ? 'Drawdown'
+            : lightbox.which === 'price'
+            ? 'Price'
+            : undefined
+        }
         subtitle={symbolsDisplay}
       >{(forPrint) => (
         <>
@@ -286,6 +315,21 @@ export default function ReturnsView(props: {
           {lightbox.which === 'returns' && returnsQuery.isSuccess && (
             <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : 'h-full w-full'}>
               <ReturnsChart dates={returnsQuery.data.dates} series={returnsQuery.data.series} benchmark={returnsQuery.data.benchmark} highlightDate={highlightDate} height={'full'} />
+            </div>
+          )}
+          {lightbox.which === 'drawdown' && returnsQuery.isSuccess && (
+            <div className={forPrint ? 'print:!h-full print:!w-full h-[82vh] w-[92vw]' : 'h-full w-full'}>
+              <DrawdownChart
+                dates={returnsQuery.data.dates}
+                series={returnsQuery.data.series.map((s) => ({ symbol: s.symbol, drawdown: s.drawdown }))}
+                benchmark={
+                  returnsQuery.data.benchmark
+                    ? { symbol: returnsQuery.data.benchmark.symbol, drawdown: returnsQuery.data.benchmark.drawdown }
+                    : undefined
+                }
+                highlightDate={highlightDate}
+                height={'full'}
+              />
             </div>
           )}
           {lightbox.which === 'price' && pricesQuery.isSuccess && (

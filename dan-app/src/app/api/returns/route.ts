@@ -7,19 +7,20 @@ import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 import { checkRateLimit } from "@/lib/rateLimit";
-import { getOrComputePrecomputed, mapGrowthToValueAndPct } from "@/lib/precompute";
+import { computeDrawdownFromGrowth, getOrComputePrecomputed, mapGrowthToValueAndPct } from "@/lib/precompute";
 
 type Horizon = "5y" | "max";
 type CustomSpan = { period1: number; period2?: number };
 
-type SeriesPayload = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
+type PrimarySeriesPayload = { symbol: string; value: Array<number | null>; pct: Array<number | null>; drawdown: Array<number | null> };
+type ExcessSeriesPayload = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
 
 type ReturnsPayload = {
   meta: { symbols: string[]; base: number; horizon: Horizon; benchmark?: string | null };
   dates: string[];
-  series: Array<SeriesPayload>;
-  benchmark: SeriesPayload | null;
-  excess: Array<SeriesPayload>;
+  series: Array<PrimarySeriesPayload>;
+  benchmark: PrimarySeriesPayload | null;
+  excess: Array<ExcessSeriesPayload>;
 };
 
 function parseHorizon(input: string | null): Horizon {
@@ -161,26 +162,44 @@ async function computeOnDemandPayload(params: {
   );
 
   const drip = computeDripSeries(seriesInputs, { base: params.base, horizon: params.horizon });
-  const bySymbol = new Map<string, SeriesPayload>();
+  const rawMap = new Map<string, { value: Array<number | null>; pct: Array<number | null> }>();
   drip.series.forEach((series) => {
-    bySymbol.set(series.symbol, { symbol: series.symbol, value: series.value, pct: series.pct });
+    rawMap.set(series.symbol, { value: series.value, pct: series.pct });
   });
-  const benchmarkSeries = params.benchmarkSymbol ? bySymbol.get(params.benchmarkSymbol) ?? null : null;
-  const primarySeries = uniqueSymbols.map((symbol) => bySymbol.get(symbol) ?? { symbol, value: [], pct: [] });
+  const primaryWithDrawdown = uniqueSymbols.map<PrimarySeriesPayload>((symbol) => {
+    const raw = rawMap.get(symbol);
+    if (!raw) return { symbol, value: [], pct: [], drawdown: [] };
+    return {
+      symbol,
+      value: raw.value,
+      pct: raw.pct,
+      drawdown: computeDrawdownFromValues(raw.value, params.base),
+    };
+  });
+  const benchmarkRaw = params.benchmarkSymbol ? rawMap.get(params.benchmarkSymbol) ?? null : null;
+  const benchmarkWithDrawdown =
+    benchmarkRaw == null
+      ? null
+      : {
+          symbol: params.benchmarkSymbol as string,
+          value: benchmarkRaw.value,
+          pct: benchmarkRaw.pct,
+          drawdown: computeDrawdownFromValues(benchmarkRaw.value, params.base),
+        };
   const excessSeries =
-    benchmarkSeries == null
+    benchmarkWithDrawdown == null
       ? []
-      : primarySeries.map((series) => ({
+      : primaryWithDrawdown.map((series) => ({
           symbol: series.symbol,
-          value: subtractArrays(series.value, benchmarkSeries.value),
-          pct: subtractArrays(series.pct, benchmarkSeries.pct),
+          value: subtractArrays(series.value, benchmarkRaw!.value),
+          pct: subtractArrays(series.pct, benchmarkRaw!.pct),
         }));
 
   return {
     meta: { symbols: params.symbols, base: params.base, horizon: params.horizon, benchmark: params.benchmarkSymbol },
     dates: drip.dates,
-    series: primarySeries,
-    benchmark: benchmarkSeries,
+    series: primaryWithDrawdown,
+    benchmark: benchmarkWithDrawdown,
     excess: excessSeries,
   };
 }
@@ -207,7 +226,7 @@ async function buildPrecomputedPayload(params: {
   });
   const dates = Array.from(unionSet).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  const bySymbol = new Map<string, SeriesPayload>();
+  const bySymbol = new Map<string, { symbol: string; value: Array<number | null>; pct: Array<number | null>; drawdown: Array<number | null> }>();
   snapshots.forEach((snapshot, index) => {
     const symbol = fetchSymbols[index];
     const growthByDate = new Map<string, number | null>();
@@ -215,16 +234,26 @@ async function buildPrecomputedPayload(params: {
       const value = snapshot.growth[idx];
       growthByDate.set(date, value == null || !Number.isFinite(value) ? null : value);
     });
+    const drawdownByDate = new Map<string, number | null>();
+    snapshot.dates.forEach((date, idx) => {
+      const value = snapshot.drawdown[idx];
+      drawdownByDate.set(date, value == null || !Number.isFinite(value) ? null : value);
+    });
     const alignedGrowth = dates.map((date) => {
       if (!growthByDate.has(date)) return null;
       const value = growthByDate.get(date);
       return value == null || !Number.isFinite(value) ? null : value;
     });
+    const alignedDrawdown = dates.map((date) => {
+      if (!drawdownByDate.has(date)) return null;
+      const value = drawdownByDate.get(date);
+      return value == null || !Number.isFinite(value) ? null : value;
+    });
     const { value, pct } = mapGrowthToValueAndPct(alignedGrowth, params.base);
-    bySymbol.set(symbol, { symbol, value, pct });
+    bySymbol.set(symbol, { symbol, value, pct, drawdown: alignedDrawdown });
   });
 
-  const primarySeries = uniqueSymbols.map((symbol) => bySymbol.get(symbol) ?? { symbol, value: [], pct: [] });
+  const primarySeries = uniqueSymbols.map((symbol) => bySymbol.get(symbol) ?? { symbol, value: [], pct: [], drawdown: [] });
   const benchmarkSeries = params.benchmarkSymbol ? bySymbol.get(params.benchmarkSymbol) ?? null : null;
   const excessSeries =
     benchmarkSeries == null
@@ -265,4 +294,13 @@ function subtractArrays(
     out.push(diff);
   }
   return out;
+}
+
+function computeDrawdownFromValues(values: Array<number | null>, base: number): Array<number | null> {
+  if (!(base > 0)) return values.map(() => null);
+  const growth = values.map((value) => {
+    if (value == null || !Number.isFinite(value)) return null;
+    return value / base;
+  });
+  return computeDrawdownFromGrowth(growth);
 }

@@ -177,6 +177,7 @@ Recharts multi-line chart with $ and % view toggle and benchmark overlay
   - Baseline label: 0-line label is displayed on the left side of the chart.
   - Benchmark line: returns chart draws a dashed overlay for the selected benchmark (default SPY) and a companion mini chart highlights per-symbol excess vs the benchmark in $/% toggles.
 - Monthly analytics: 1y/3y/5y heatmap (first trading day per month) and linked histogram live in `ReturnsView`. Clicking a cell syncs the forward returns chart; hovering a bin highlights its months; an excess-vs-SPY toggle appears when the benchmark overlay is active.
+- Drawdown chart: `ReturnsView` renders a dedicated peak-to-trough drawdown line chart (with optional SPY overlay) driven by the enhanced `/api/returns` payload.
 
 UX toggles
 - Left panel (Symbols/Inputs + Dividends) supports a master collapse with chevron + “Hide/Show” text. Defaults: open on desktop (md+), closed on mobile. State persists via localStorage (`ui.leftPanel.open`). The panel remains mounted; width animates from 320px to a slim 12px gutter for smooth chart resizing.
