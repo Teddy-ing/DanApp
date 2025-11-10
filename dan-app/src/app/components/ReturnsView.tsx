@@ -39,7 +39,7 @@ export default function ReturnsView(props: {
   const [metricMode, setMetricMode] = React.useState<"return" | "excess">("return");
   const [selectedSymbol, setSelectedSymbol] = React.useState<string | null>(null);
   const [highlightDate, setHighlightDate] = React.useState<string | null>(null);
-  const [hoveredRangeDates, setHoveredRangeDates] = React.useState<Set<string> | null>(null);
+  const [hoverState, updateHoverState] = React.useState<{ key: string; value: Set<string> | null }>({ key: "", value: null });
   useEffect(() => {
     if (typeof onLightboxOpenChange === 'function') onLightboxOpenChange(lightbox.open);
     wasOpenRef.current = wasOpenRef.current || lightbox.open;
@@ -131,10 +131,17 @@ export default function ReturnsView(props: {
   const activeSymbol = selectedSymbol ?? monthlyAnalytics?.symbols[0] ?? null;
   const activeData = activeSymbol ? monthlyAnalytics?.bySymbol.get(activeSymbol) : undefined;
   const canShowExcess = monthlyAnalytics?.hasBenchmark ?? false;
-
-  useEffect(() => {
-    setHoveredRangeDates(null);
-  }, [activeSymbol, heatmapHorizon, metricMode]);
+  const hoverContextKey = React.useMemo(
+    () => `${activeSymbol ?? "none"}|${heatmapHorizon}|${metricMode}`,
+    [activeSymbol, heatmapHorizon, metricMode],
+  );
+  const hoveredRangeDates = hoverState.key === hoverContextKey ? hoverState.value : null;
+  const setHoveredRangeDates = React.useCallback(
+    (next: Set<string> | null) => {
+      updateHoverState({ key: hoverContextKey, value: next });
+    },
+    [hoverContextKey],
+  );
 
 
   return (

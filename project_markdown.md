@@ -2,6 +2,8 @@
 **Version:** 0.4 (Aug 7, 2025)  
 **Owner:** Theodore Ingberman
 
+**Update (Nov 10, 2025, late pm):** Corrected monthly heatmap horizon filter so 1y/3y views stay within range and added regression test.
+**Update (Nov 10, 2025, pm):** Restored pnpm workspace config and squashed React lint regressions in chart panels so installs and builds run cleanly.
 **Update (Nov 10, 2025):** Custom-span DRIP requests now honor their exact date window, preventing out-of-range returns from skewing forward-return stats or charts.
 **Update (Nov 8, 2025):** Login now routes through a confirmation screen before Google OAuth; dedicated Terms and Privacy pages outline The RND Group’s policies for better transparency.
 

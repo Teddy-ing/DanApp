@@ -109,7 +109,7 @@ function computeForSymbol(params: {
     if (seenMonthKeys.has(monthKey)) continue;
 
     if (!MONTHS.includes(month)) continue;
-    if (horizonYears > 0 && yearsBetween(parsed, lastDate) < horizonYears) continue;
+    if (horizonYears > 0 && yearsBetween(parsed, lastDate) >= horizonYears) continue;
 
     const returnPct = safeRatio(endValue, startValue);
     if (returnPct == null) continue;

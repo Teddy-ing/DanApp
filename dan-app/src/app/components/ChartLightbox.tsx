@@ -16,6 +16,7 @@ export default function ChartLightbox(props: Props) {
   const [mounted, setMounted] = useState(false);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
   const draggingRef = useRef<{ dragging: boolean; startX: number; startY: number; startOffsetX: number; startOffsetY: number }>({ dragging: false, startX: 0, startY: 0, startOffsetX: 0, startOffsetY: 0 });
   const frameRef = useRef<HTMLDivElement | null>(null);
 
@@ -47,6 +48,7 @@ export default function ChartLightbox(props: Props) {
 
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    setIsDragging(true);
     draggingRef.current = {
       dragging: true,
       startX: e.clientX,
@@ -66,6 +68,7 @@ export default function ChartLightbox(props: Props) {
     const dy = Math.abs(e.clientY - draggingRef.current.startY);
     const moved = dx > 6 || dy > 6;
     draggingRef.current.dragging = false;
+    setIsDragging(false);
     if (!moved && e.button === 0) {
       onToggleZoom(e);
     }
@@ -74,12 +77,6 @@ export default function ChartLightbox(props: Props) {
   const onToggleZoom = (e: React.MouseEvent) => {
     e.stopPropagation();
     setScale((s) => (s > 1 ? 1 : 2));
-  };
-
-  const onReset = (e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setScale(1);
-    setOffset({ x: 0, y: 0 });
   };
 
   const content = useMemo(() => {
@@ -114,7 +111,7 @@ export default function ChartLightbox(props: Props) {
             <div
               role="presentation"
               className="relative mx-auto overflow-hidden rounded-lg bg-white/5 print-container"
-              style={{ width: "92vw", height: "82vh", cursor: draggingRef.current.dragging ? "grabbing" : "grab" }}
+              style={{ width: "92vw", height: "82vh", cursor: isDragging ? "grabbing" : "grab" }}
               ref={frameRef}
               onWheel={onWheel}
               onMouseDown={onMouseDown}
@@ -144,7 +141,7 @@ export default function ChartLightbox(props: Props) {
         </div>
       </div>
     );
-  }, [open, onClose, title, subtitle, children, scale, offset]);
+  }, [open, onClose, title, subtitle, children, scale, offset, isDragging]);
 
   if (!mounted) return null;
   return createPortal(content, document.body);
