@@ -282,8 +282,8 @@ export default function StatsPanel(props: { symbols: string[]; horizon: Horizon;
               </tbody>
             </table>
           </div>
-          </div>
-        )})}
+        );
+        })}
         {query.isSuccess && (
           <div className="mt-4 rounded-xl border border-black/10 dark:border-white/15 p-4 sm:p-5 bg-white dark:bg-neutral-900">
             <div className="text-sm font-medium mb-2">Definitions</div>
