@@ -194,10 +194,24 @@ function findIndexAtOrAfter(dates: string[], target: string, startIndex: number 
 }
 
 function shiftYears(isoDate: string, years: number): string {
-  const [yearStr, monthStr, dayStr] = isoDate.split("-");
+  if (typeof isoDate !== "string") return isoDate;
+  const parts = isoDate.split("-");
+  if (parts.length !== 3) return isoDate;
+  const [yearStr, monthStr, dayStr] = parts;
   const year = Number(yearStr);
   const month = Number(monthStr);
   const day = Number(dayStr);
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return isoDate;
+  }
   let targetDay = day;
   const targetYear = year + years;
   let date = new Date(Date.UTC(targetYear, month - 1, targetDay));

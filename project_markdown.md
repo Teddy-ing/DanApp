@@ -2,6 +2,7 @@
 **Version:** 0.4 (Aug 7, 2025)  
 **Owner:** Theodore Ingberman
 
+**Update (Nov 10, 2025):** Percentile stats now ignore malformed snapshot dates when shifting horizons, preventing NaN calculations from reaching API consumers.
 **Update (Nov 8, 2025):** Login now routes through a confirmation screen before Google OAuth; dedicated Terms and Privacy pages outline The RND Group’s policies for better transparency.
 
 Let users enter **one–five U.S. stock tickers** and see, for every historical trading day (or last 5y, whichever is longer), the **$ value** and **% return** of a user-chosen **base investment** (default $1,000) made on that day **with dividends reinvested** at the **next market-open VWAP**. Multi-symbol comparison on the same chart.
