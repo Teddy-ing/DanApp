@@ -1,10 +1,19 @@
 import { auth, signIn } from "@/auth";
 import { redirect } from "next/navigation";
 
-export default async function LoginPage() {
+type LoginPageProps = {
+  searchParams?: {
+    share?: string;
+  };
+};
+
+export default async function LoginPage(props: LoginPageProps) {
+  const shareId = typeof props.searchParams?.share === "string" && props.searchParams.share.length > 0 ? props.searchParams.share : null;
+  const redirectTo = shareId ? `/returns?share=${shareId}` : "/returns";
+
   const session = await auth();
   if (session?.user) {
-    redirect("/returns");
+    redirect(redirectTo);
   }
 
   const enableTestUser = process.env.AUTH_ENABLE_TEST_USER === "true";
@@ -24,7 +33,7 @@ export default async function LoginPage() {
             action={async () => {
               "use server";
               await signIn("google", {
-                redirectTo: "/returns",
+                redirectTo,
                 prompt: "select_account",
               });
             }}
@@ -39,7 +48,7 @@ export default async function LoginPage() {
               action={async () => {
                 "use server";
                 await signIn("test-user", {
-                  redirectTo: "/returns",
+                  redirectTo,
                 });
               }}
             >
