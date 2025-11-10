@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
-import { parseSymbols } from "@/lib/ticker";
+import { parseSymbols, validateUsTickerFormat } from "@/lib/ticker";
 import { computeDripSeries } from "@/lib/drip";
 import { gzipSync } from "zlib";
 import { toApiError } from "@/lib/errors";
@@ -12,10 +12,14 @@ import { getOrComputePrecomputed, mapGrowthToValueAndPct } from "@/lib/precomput
 type Horizon = "5y" | "max";
 type CustomSpan = { period1: number; period2?: number };
 
+type SeriesPayload = { symbol: string; value: Array<number | null>; pct: Array<number | null> };
+
 type ReturnsPayload = {
-  meta: { symbols: string[]; base: number; horizon: Horizon };
+  meta: { symbols: string[]; base: number; horizon: Horizon; benchmark?: string | null };
   dates: string[];
-  series: Array<{ symbol: string; value: Array<number | null>; pct: Array<number | null> }>;
+  series: Array<SeriesPayload>;
+  benchmark: SeriesPayload | null;
+  excess: Array<SeriesPayload>;
 };
 
 function parseHorizon(input: string | null): Horizon {
@@ -85,17 +89,34 @@ export async function GET(req: NextRequest) {
   const period1 = url.searchParams.get("period1");
   const period2 = url.searchParams.get("period2");
   const customSpan = period1 ? { period1: Number(period1), period2: period2 ? Number(period2) : undefined } : undefined;
+  const benchmarkParam = url.searchParams.get("benchmark");
+  let benchmarkSymbol: string | null = "SPY";
+  if (benchmarkParam && benchmarkParam.trim().length > 0) {
+    if (benchmarkParam.trim().toLowerCase() === "none") {
+      benchmarkSymbol = null;
+    } else {
+      try {
+        benchmarkSymbol = validateUsTickerFormat(benchmarkParam);
+      } catch (err) {
+        const { status, payload: errorPayload } = toApiError(err);
+        return new NextResponse(JSON.stringify(errorPayload), {
+          status,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        });
+      }
+    }
+  }
 
   let payload: ReturnsPayload;
   try {
     if (!customSpan) {
       try {
-        payload = await buildPrecomputedPayload({ symbols, horizon, base, rapidApiKey });
+        payload = await buildPrecomputedPayload({ symbols, horizon, base, rapidApiKey, benchmarkSymbol });
       } catch {
-        payload = await computeOnDemandPayload({ symbols, horizon, base, rapidApiKey });
+        payload = await computeOnDemandPayload({ symbols, horizon, base, rapidApiKey, benchmarkSymbol });
       }
     } else {
-      payload = await computeOnDemandPayload({ symbols, horizon, base, rapidApiKey, customSpan });
+      payload = await computeOnDemandPayload({ symbols, horizon, base, rapidApiKey, customSpan, benchmarkSymbol });
     }
   } catch (err: unknown) {
     const { status, payload: errorPayload } = toApiError(err);
@@ -122,11 +143,17 @@ async function computeOnDemandPayload(params: {
   horizon: Horizon;
   base: number;
   rapidApiKey: string;
+  benchmarkSymbol: string | null;
   customSpan?: CustomSpan;
 }): Promise<ReturnsPayload> {
+  const uniqueSymbols = Array.from(new Set(params.symbols));
+  const includeBenchmark =
+    params.benchmarkSymbol && !uniqueSymbols.includes(params.benchmarkSymbol) ? params.benchmarkSymbol : null;
+  const span = params.customSpan ?? params.horizon;
+
+  const loadOrder = includeBenchmark ? [...uniqueSymbols, includeBenchmark] : [...uniqueSymbols];
   const seriesInputs = await Promise.all(
-    params.symbols.map(async (symbol) => {
-      const span = params.customSpan ?? params.horizon;
+    loadOrder.map(async (symbol) => {
       const candles = await fetchDailyCandles(symbol, span, { rapidApiKey: params.rapidApiKey });
       const events = await fetchSplitsAndDividends(symbol, span, { rapidApiKey: params.rapidApiKey });
       return { symbol, candles, splits: events.splits, dividends: events.dividends };
@@ -134,10 +161,27 @@ async function computeOnDemandPayload(params: {
   );
 
   const drip = computeDripSeries(seriesInputs, { base: params.base, horizon: params.horizon });
+  const bySymbol = new Map<string, SeriesPayload>();
+  drip.series.forEach((series) => {
+    bySymbol.set(series.symbol, { symbol: series.symbol, value: series.value, pct: series.pct });
+  });
+  const benchmarkSeries = params.benchmarkSymbol ? bySymbol.get(params.benchmarkSymbol) ?? null : null;
+  const primarySeries = uniqueSymbols.map((symbol) => bySymbol.get(symbol) ?? { symbol, value: [], pct: [] });
+  const excessSeries =
+    benchmarkSeries == null
+      ? []
+      : primarySeries.map((series) => ({
+          symbol: series.symbol,
+          value: subtractArrays(series.value, benchmarkSeries.value),
+          pct: subtractArrays(series.pct, benchmarkSeries.pct),
+        }));
+
   return {
-    meta: { symbols: params.symbols, base: params.base, horizon: params.horizon },
+    meta: { symbols: params.symbols, base: params.base, horizon: params.horizon, benchmark: params.benchmarkSymbol },
     dates: drip.dates,
-    series: drip.series,
+    series: primarySeries,
+    benchmark: benchmarkSeries,
+    excess: excessSeries,
   };
 }
 
@@ -146,9 +190,15 @@ async function buildPrecomputedPayload(params: {
   horizon: Horizon;
   base: number;
   rapidApiKey: string;
+  benchmarkSymbol: string | null;
 }): Promise<ReturnsPayload> {
+  const uniqueSymbols = Array.from(new Set(params.symbols));
+  const includeBenchmark =
+    params.benchmarkSymbol && !uniqueSymbols.includes(params.benchmarkSymbol) ? params.benchmarkSymbol : null;
+  const fetchSymbols = includeBenchmark ? [...uniqueSymbols, includeBenchmark] : [...uniqueSymbols];
+
   const snapshots = await Promise.all(
-    params.symbols.map((symbol) => getOrComputePrecomputed(symbol, params.horizon, params.rapidApiKey))
+    fetchSymbols.map((symbol) => getOrComputePrecomputed(symbol, params.horizon, params.rapidApiKey))
   );
 
   const unionSet = new Set<string>();
@@ -157,7 +207,9 @@ async function buildPrecomputedPayload(params: {
   });
   const dates = Array.from(unionSet).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
-  const series = snapshots.map((snapshot, index) => {
+  const bySymbol = new Map<string, SeriesPayload>();
+  snapshots.forEach((snapshot, index) => {
+    const symbol = fetchSymbols[index];
     const growthByDate = new Map<string, number | null>();
     snapshot.dates.forEach((date, idx) => {
       const value = snapshot.growth[idx];
@@ -169,12 +221,48 @@ async function buildPrecomputedPayload(params: {
       return value == null || !Number.isFinite(value) ? null : value;
     });
     const { value, pct } = mapGrowthToValueAndPct(alignedGrowth, params.base);
-    return { symbol: params.symbols[index], value, pct };
+    bySymbol.set(symbol, { symbol, value, pct });
   });
 
+  const primarySeries = uniqueSymbols.map((symbol) => bySymbol.get(symbol) ?? { symbol, value: [], pct: [] });
+  const benchmarkSeries = params.benchmarkSymbol ? bySymbol.get(params.benchmarkSymbol) ?? null : null;
+  const excessSeries =
+    benchmarkSeries == null
+      ? []
+      : primarySeries.map((series) => ({
+          symbol: series.symbol,
+          value: subtractArrays(series.value, benchmarkSeries.value),
+          pct: subtractArrays(series.pct, benchmarkSeries.pct),
+        }));
+
   return {
-    meta: { symbols: params.symbols, base: params.base, horizon: params.horizon },
+    meta: { symbols: params.symbols, base: params.base, horizon: params.horizon, benchmark: params.benchmarkSymbol },
     dates,
-    series,
+    series: primarySeries,
+    benchmark: benchmarkSeries,
+    excess: excessSeries,
   };
+}
+
+function subtractArrays(
+  a: Array<number | null>,
+  b: Array<number | null>
+): Array<number | null> {
+  const length = Math.max(a.length, b.length);
+  const out: Array<number | null> = [];
+  for (let i = 0; i < length; i += 1) {
+    const av = a[i] ?? null;
+    const bv = b[i] ?? null;
+    if (av == null || bv == null) {
+      out.push(null);
+      continue;
+    }
+    const diff = av - bv;
+    if (!Number.isFinite(diff)) {
+      out.push(null);
+      continue;
+    }
+    out.push(diff);
+  }
+  return out;
 }

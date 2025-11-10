@@ -70,6 +70,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Price chart: "Price of {symbols}" using the same symbol display.
 - Implemented in `src/app/components/ReturnsView.tsx`.
 - Chart order updated: Forward Returns, Returns, then Price.
+- Returns view now overlays a benchmark line (default `SPY`, override via the `benchmark` query) and adds a compact excess-return mini chart so users can judge absolute performance plus beat/lag at a glance (≈58 words).
+- Monthly analytics section adds a clickable heatmap (1y/3y/5y horizons) and linked histogram—hover bins to spotlight cells, click a month to highlight the forward-returns chart, and toggle excess vs SPY when the benchmark overlay is present.
 - Inputs: Button handlers validate pending input and block duplicates/over-limit; buttons no longer stay disabled after a validation error.
   - Fix: Removed error-based disabled state so users can retry immediately.
 - Charts: When embedded in the lightbox, `ReturnsChart` and `ForwardReturnsChart` correctly respect `height="full"`.
@@ -187,16 +189,20 @@ Errors: Endpoints return structured errors with codes and, in development, detai
 ### GET `/api/returns` (auth required)
 
 - No headers required; the server uses the shared key or the user’s override if present.
-- Query: `symbols=AAPL,MSFT` (1–5), optional `horizon=5y|max` (default `5y`), optional `base=number` (default `1000`)
-- Behavior: Orchestrates prices + dividends per symbol and runs DRIP total return. Response is gzipped.
+- Query: `symbols=AAPL,MSFT` (1–5), optional `horizon=5y|max` (default `5y`), optional `base=number` (default `1000`), optional `benchmark=SPY|none|{ticker}` (default `SPY`)
+- Behavior: Orchestrates prices + dividends per symbol, runs DRIP total return, aligns an optional benchmark overlay, and computes excess (symbol minus benchmark) series. Response is gzipped.
 - Response:
 
 ```json
 {
-  "meta": { "symbols": ["AAPL","MSFT"], "base": 1000, "horizon": "5y" },
+  "meta": { "symbols": ["AAPL", "MSFT"], "base": 1000, "horizon": "5y", "benchmark": "SPY" },
   "dates": ["2021-01-04", "2021-01-05"],
   "series": [
     { "symbol": "AAPL", "value": [1000, 1003.2], "pct": [0, 0.0032] }
+  ],
+  "benchmark": { "symbol": "SPY", "value": [1000, 1001.1], "pct": [0, 0.0011] },
+  "excess": [
+    { "symbol": "AAPL", "value": [0, 2.1], "pct": [0, 0.0021] }
   ]
 }
 ```

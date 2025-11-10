@@ -57,30 +57,37 @@ flowchart LR
   DRIP --> UI
 2) API Contracts
 2.1 GET /api/returns
-Query: symbols=AAPL,MSFT&horizon=5y|max&base=1000
+Query: symbols=AAPL,MSFT&horizon=5y|max&base=1000&benchmark=SPY|none|{ticker}
 
-symbols (1–5 U.S. tickers), horizon defaults to 5y, base defaults to 1000 (USD)
+symbols (1–5 U.S. tickers), horizon defaults to 5y, base defaults to 1000 (USD), benchmark defaults to SPY (set `benchmark=none` to skip)
 
 200 Response
 
-json
-Copy
-Edit
+```json
 {
   "meta": {
-    "baseInvestment": 1000,
-    "currency": "USD",
-    "timezone": "America/New_York",
+    "symbols": ["AAPL", "MSFT"],
+    "base": 1000,
     "horizon": "5y",
-    "market": "US"
+    "benchmark": "SPY"
   },
   "dates": ["2021-01-04", "..."],
   "series": [
-    { "symbol": "AAPL", "value": [1000, 1008.4, null, ...], "pct": [0, 0.0084, null, ...] },
-    { "symbol": "MSFT", "value": [1000, 1006.1, 1002.7, ...], "pct": [0, 0.0061, 0.0027, ...] }
+    { "symbol": "AAPL", "value": [1000, 1008.4, null], "pct": [0, 0.0084, null] },
+    { "symbol": "MSFT", "value": [1000, 1006.1, 1002.7], "pct": [0, 0.0061, 0.0027] }
+  ],
+  "benchmark": {
+    "symbol": "SPY",
+    "value": [1000, 1004.9, 1001.5],
+    "pct": [0, 0.0049, 0.0015]
+  },
+  "excess": [
+    { "symbol": "AAPL", "value": [0, 3.5, null], "pct": [0, 0.0035, null] },
+    { "symbol": "MSFT", "value": [0, 1.2, 1.2], "pct": [0, 0.0012, 0.0012] }
   ]
 }
-Notes: dates are aligned across symbols; missing data yields null entries.
+```
+Notes: dates are aligned across symbols and the benchmark; missing data yields null entries. Excess rows subtract benchmark values/returns from each symbol.
 
 2.2 POST /api/user/key (auth required)
 Body: { "rapidapiKey": "…" }
@@ -165,9 +172,11 @@ If data missing on d → push null for that symbol to keep arrays aligned.
 5) UI/UX
 Multi-symbol chip input (max 5); base amount numeric input (default 1000); horizon toggle (5y / max). Input panel keeps current tickers visible after the layout shifts into the two-column view post-query. Charts label the zero baseline as $0 or 0% based on the active mode.
 
-Recharts multi-line chart with $ and % view toggle
+Recharts multi-line chart with $ and % view toggle and benchmark overlay
   - Y-axis & tint: target 0 at 10% from the bottom with clamped p (top bound anchored to data; bottom deepens only as needed). Tint regions (green/red) are driven by the current axis domain: if domain is all ≥0 → full green; all ≤0 → full red; otherwise split at 0. This avoids flicker with small date-window shifts.
   - Baseline label: 0-line label is displayed on the left side of the chart.
+  - Benchmark line: returns chart draws a dashed overlay for the selected benchmark (default SPY) and a companion mini chart highlights per-symbol excess vs the benchmark in $/% toggles.
+- Monthly analytics: 1y/3y/5y heatmap (first trading day per month) and linked histogram live in `ReturnsView`. Clicking a cell syncs the forward returns chart; hovering a bin highlights its months; an excess-vs-SPY toggle appears when the benchmark overlay is active.
 
 UX toggles
 - Left panel (Symbols/Inputs + Dividends) supports a master collapse with chevron + “Hide/Show” text. Defaults: open on desktop (md+), closed on mobile. State persists via localStorage (`ui.leftPanel.open`). The panel remains mounted; width animates from 320px to a slim 12px gutter for smooth chart resizing.

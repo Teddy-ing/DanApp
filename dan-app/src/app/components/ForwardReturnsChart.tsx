@@ -22,9 +22,10 @@ type Props = {
   series: Series[];
   base?: number;
   height?: number | 'full';
+  highlightDate?: string | null;
 };
 
-export default function ForwardReturnsChart({ dates, series, base, height }: Props) {
+export default function ForwardReturnsChart({ dates, series, base, height, highlightDate }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
   const zeroLineLabel = mode === '$' ? '$0' : '0%';
 
@@ -120,6 +121,9 @@ export default function ForwardReturnsChart({ dates, series, base, height }: Pro
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
+            {highlightDate ? (
+              <ReferenceLine x={highlightDate} stroke="#f59e0b" strokeDasharray="2 2" strokeWidth={2} ifOverflow="extendDomain" />
+            ) : null}
             {hasDomain && (
               <>
                 {yDomain[1] <= 0 ? (
