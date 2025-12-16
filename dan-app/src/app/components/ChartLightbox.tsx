@@ -13,11 +13,16 @@ type Props = {
 
 export default function ChartLightbox(props: Props) {
   const { open, onClose, title, subtitle, children } = props;
+  const [mounted, setMounted] = useState(false);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const draggingRef = useRef<{ dragging: boolean; startX: number; startY: number; startOffsetX: number; startOffsetY: number }>({ dragging: false, startX: 0, startY: 0, startOffsetX: 0, startOffsetY: 0 });
   const frameRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -75,7 +80,7 @@ export default function ChartLightbox(props: Props) {
   };
 
   if (typeof document === "undefined") return null;
-  if (!open) return null;
+  if (!mounted || !open) return null;
 
   const content = (
     <div className="fixed inset-0 z-[1000] clb-portal">

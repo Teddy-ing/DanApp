@@ -55,6 +55,8 @@ export default function DividendsPanel(props: { symbols: string[]; horizon: Hori
   // Collapsible panel state with localStorage persistence
   const [open, setOpen] = useState<boolean>(true);
   useEffect(() => {
+    // Sync from localStorage after mount without changing SSR HTML
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(readStoredOpen());
   }, []);
   const setOpenAndPersist = (next: boolean) => {
