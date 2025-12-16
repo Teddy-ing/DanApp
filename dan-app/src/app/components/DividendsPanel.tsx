@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 type Horizon = "5y" | "max";
@@ -53,7 +53,10 @@ export default function DividendsPanel(props: { symbols: string[]; horizon: Hori
   };
 
   // Collapsible panel state with localStorage persistence
-  const [open, setOpen] = useState<boolean>(() => readStoredOpen());
+  const [open, setOpen] = useState<boolean>(true);
+  useEffect(() => {
+    setOpen(readStoredOpen());
+  }, []);
   const setOpenAndPersist = (next: boolean) => {
     setOpen(next);
     try {

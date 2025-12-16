@@ -80,6 +80,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
   - Fix: Y-axis bounds now seed from the first finite data point rather than 0 to avoid incorrect domains when data is entirely positive or negative.
 - Lightbox: Improved click/drag behavior (only left-click toggles zoom), and print layout.
 - Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
+- Dividends panel: starts open on SSR and syncs with stored preference after mount to avoid hydration mismatches while preserving the saved open/closed state.
 
 ### Lightbox (chart enlarge, print)
 
