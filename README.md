@@ -82,6 +82,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
 - Dividends panel: starts open on SSR and syncs with stored preference after mount to avoid hydration mismatches while preserving the saved open/closed state.
 - Yieldmax tables: render helper now returns a React node type to satisfy TS/JSX typing.
+- Returns histogram: guards zero-width binning so identical returns do not crash hydration/render.
 
 ### Lightbox (chart enlarge, print)
 

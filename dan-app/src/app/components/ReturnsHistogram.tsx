@@ -133,6 +133,19 @@ function buildBins(cells: MonthlyCell[], metric: MetricMode) {
   const max = Math.max(domain.max, DEFAULT_DOMAIN.max);
   const width = (max - min) / BIN_COUNT;
 
+  if (width === 0) {
+    const singleBin: BinDatum = {
+      index: 0,
+      start: min,
+      end: max,
+      mid: min,
+      count: values.length,
+      dates: values.map((v) => v.date),
+    };
+    const totalCount = values.length;
+    return { bins: [singleBin], domain: { min, max }, totalCount };
+  }
+
   const bins: BinDatum[] = Array.from({ length: BIN_COUNT }, (_, index) => {
     const start = min + index * width;
     const end = index === BIN_COUNT - 1 ? max : start + width;
