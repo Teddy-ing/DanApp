@@ -1,4 +1,9 @@
-<!-- 0651386f-refresh 2025-11-10 -->
+---
+name: Phase Feature Build Plan (Refresh)
+overview: ""
+todos: []
+---
+
 # Phase Feature Build Plan (Refresh)
 
 > Continuation of the original phase plan with updated progress tracking for the refreshed context.

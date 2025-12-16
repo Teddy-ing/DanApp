@@ -2,6 +2,7 @@
 **Version:** 0.4 (Aug 7, 2025)  
 **Owner:** Theodore Ingberman
 
+**Update (Dec 15, 2025):** Added a protected `/yieldmax` page mirroring YieldMax ETF groups with ROC scrape (24h Redis cache) and dividend-rate calculations via Yahoo Finance; shared header now links Returns ↔ YieldMax.
 **Update (Nov 11, 2025, later):** Reflowed the returns histogram so its summary stats sit below the chart, preventing overlap with the price panel.
 **Update (Nov 11, 2025):** Deferred effect-driven state updates to microtasks to keep React Compiler happy (lightbox, returns shell/view) and trimmed unused theme toggle stub.
 **Update (Nov 10, 2025, late pm):** Corrected monthly heatmap horizon filter so 1y/3y views stay within range and added regression test.
@@ -27,6 +28,7 @@ Let users enter **one–five U.S. stock tickers** and see, for every historical 
 - **Charts:** Multi-symbol overlay; toggle between **$** and **%**  
 - **Base amount:** **User input** (default $1,000)  
 - **Caching:** Upstash Redis (REST) – prices/splits/dividends 24h, IR scrape 7d  
+- **YieldMax ROC/Rate:** ROC scraped from yieldmaxetfs.com (24h cache, hardcoded group fallback); Rate = last 12m dividends ÷ latest price via Yahoo Finance (cached 6h per symbol)
 - **Errors:** Developer-friendly stack traces (user-facing toasts in prod)  
 - **Disclaimer:** Footer – “Data provided by Yahoo Finance via RapidAPI. For informational purposes only. Not investment advice.”
 
@@ -42,6 +44,7 @@ Let users enter **one–five U.S. stock tickers** and see, for every historical 
   - `/api/user/key` — save/get optional personal RapidAPI key (encrypted at rest; overrides shared key)
   - `/api/stats/percentile` — percentile ranks for 1y/3y/5y DRIP returns
   - `/api/precompute` — Vercel cron endpoint to warm DRIP caches (`precomp:{symbol}:{horizon}`)
+  - `/api/yieldmax` — YieldMax ROC scrape (24h Redis cache) + dividend-rate lookup via Yahoo Finance
 - **Adapters:** `providers/yahoo.ts` (RapidAPI), `scrapers/ir.ts` (Cheerio)  
 - **Core math:** `lib/drip.ts` (pure, unit-tested)  
 - **Cache:** Upstash Redis (global) with TTLs (see §3.3)  
@@ -129,6 +132,9 @@ Dividends (YF): yf:{symbol}:divs:v1 — 24h
 IR scrape: ir:{symbol}:divs:v1 — 7d
 
 User key: user:{id}:rapidapiKey — no TTL
+
+YieldMax scrape: yieldmax:scrape:v1 — 24h  
+YieldMax rate: yieldmax:rate:{symbol}:v1 — 6h
 
 Precompute snapshots: precomp:{symbol}:{horizon} — 6h
 
