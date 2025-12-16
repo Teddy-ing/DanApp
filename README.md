@@ -81,6 +81,7 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Lightbox: Improved click/drag behavior (only left-click toggles zoom), and print layout.
 - Left panel: SSR-safe default; syncs with localStorage and media query after mount to avoid hydration issues.
 - Dividends panel: starts open on SSR and syncs with stored preference after mount to avoid hydration mismatches while preserving the saved open/closed state.
+- Yieldmax tables: render helper now returns a React node type to satisfy TS/JSX typing.
 
 ### Lightbox (chart enlarge, print)
 

@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useQuery } from '@tanstack/react-query';
 
 type RateInfo = { value: number | null; overMonths?: number };
@@ -99,7 +100,7 @@ function renderPercent(value: number | null): string {
   return `${value.toFixed(2)}%`;
 }
 
-function renderRate(rate: RateInfo): JSX.Element {
+function renderRate(rate: RateInfo): ReactNode {
   if (rate.value == null || !Number.isFinite(rate.value)) return <span>N/A</span>;
   return (
     <div className="flex flex-col">
