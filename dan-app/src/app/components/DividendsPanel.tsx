@@ -53,7 +53,7 @@ export default function DividendsPanel(props: { symbols: string[]; horizon: Hori
   };
 
   // Collapsible panel state with localStorage persistence
-  const [open, setOpen] = useState<boolean>(readStoredOpen);
+  const [open, setOpen] = useState<boolean>(() => readStoredOpen());
   const setOpenAndPersist = (next: boolean) => {
     setOpen(next);
     try {
