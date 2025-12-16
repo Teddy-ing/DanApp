@@ -87,12 +87,10 @@ export default function KeyModal({ sharedKeyActive }: KeyModalProps) {
         throw new Error(data?.error?.message || 'Failed to save key');
       }
       setHasKey(true);
-      setToast('Personal RapidAPI key saved');
+      const message = data?.persisted === false ? 'Personal RapidAPI key saved (could not verify persistence)' : 'Personal RapidAPI key saved';
+      setToast(message);
       setOpen(false);
       setRapidapiKey('');
-      if (data?.persisted === false) {
-        setToast('Saved, but could not verify persistence');
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save key');
     } finally {

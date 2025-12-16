@@ -21,6 +21,7 @@ export default function ChartLightbox(props: Props) {
   const frameRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

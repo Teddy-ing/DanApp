@@ -56,7 +56,12 @@ export default function ReturnsView(props: {
       });
     });
   }, [lightbox.open, lightbox.which]);
-  const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom }], [symbols, base, horizon, custom]);
+  const benchmarkParam = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const value = new URLSearchParams(window.location.search).get("benchmark");
+    return value && value.trim().length > 0 ? value : null;
+  }, []);
+  const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom, benchmark: benchmarkParam }], [symbols, base, horizon, custom, benchmarkParam]);
   const enabled = symbols.length > 0;
 
   const amountDisplay = useMemo(() => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(base), [base]);
@@ -70,6 +75,9 @@ export default function ReturnsView(props: {
       params.set("symbols", symbols.join(","));
       params.set("horizon", horizon);
       params.set("base", String(base));
+      if (benchmarkParam) {
+        params.set("benchmark", benchmarkParam);
+      }
       if (typeof document !== "undefined" && custom.enabled) {
         const nowSec = Math.floor(Date.now() / 1000);
         const start = custom.start ? Math.floor(new Date(custom.start + "T00:00:00Z").getTime() / 1000) : undefined;
