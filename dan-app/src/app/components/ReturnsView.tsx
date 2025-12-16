@@ -40,6 +40,7 @@ export default function ReturnsView(props: {
   const [selectedSymbol, setSelectedSymbol] = React.useState<string | null>(null);
   const [highlightDate, setHighlightDate] = React.useState<string | null>(null);
   const [hoverState, updateHoverState] = React.useState<{ key: string; value: Set<string> | null }>({ key: "", value: null });
+  const [benchmarkParam, setBenchmarkParam] = React.useState<string | null>(null);
   useEffect(() => {
     if (typeof onLightboxOpenChange === 'function') onLightboxOpenChange(lightbox.open);
     wasOpenRef.current = wasOpenRef.current || lightbox.open;
@@ -56,10 +57,17 @@ export default function ReturnsView(props: {
       });
     });
   }, [lightbox.open, lightbox.which]);
-  const benchmarkParam = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const value = new URLSearchParams(window.location.search).get("benchmark");
-    return value && value.trim().length > 0 ? value : null;
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const readBenchmark = () => {
+      const value = new URLSearchParams(window.location.search).get("benchmark");
+      setBenchmarkParam(value && value.trim().length > 0 ? value : null);
+    };
+    readBenchmark();
+    window.addEventListener("popstate", readBenchmark);
+    return () => {
+      window.removeEventListener("popstate", readBenchmark);
+    };
   }, []);
   const queryKey = useMemo(() => ["returns", { symbols, base, horizon, custom, benchmark: benchmarkParam }], [symbols, base, horizon, custom, benchmarkParam]);
   const enabled = symbols.length > 0;
