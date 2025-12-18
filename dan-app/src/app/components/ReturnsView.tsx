@@ -178,6 +178,22 @@ export default function ReturnsView(props: {
         )}
       </div>
       )}
+      {!lightbox.open && returnsQuery.isSuccess && pricesQuery.isSuccess && (
+        <div className="mb-6">
+          <div className="text-sm mb-2">{symbols.length > 1 ? `Prices of ${symbolsDisplay}` : `Price of ${symbolsDisplay}`}</div>
+          <div className="mb-4" onDoubleClick={() => setLightbox({ open: true, which: 'price' })}>
+            <PriceChart
+              items={pricesQuery.data.items.map((i) => ({
+                symbol: i.symbol,
+                candles: i.candles.map((c) => ({
+                  dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
+                  close: typeof c.close === 'number' ? c.close : null,
+                })),
+              }))}
+            />
+          </div>
+        </div>
+      )}
       {!lightbox.open && returnsQuery.isSuccess && (
         <div className="mb-6">
           <div className="text-sm mb-2">Returns from each date shown to the present (including reinvested dividends)</div>
@@ -301,22 +317,6 @@ export default function ReturnsView(props: {
                 setHoveredRangeDates(new Set(range.dates));
               }}
             />
-          </div>
-        </div>
-      )}
-      {!lightbox.open && pricesQuery.isSuccess && (
-        <div>
-          <div className="text-sm mb-2">{symbols.length > 1 ? `Prices of ${symbolsDisplay}` : `Price of ${symbolsDisplay}`}</div>
-          <div className="mb-4" onDoubleClick={() => setLightbox({ open: true, which: 'price' })}>
-          <PriceChart
-            items={pricesQuery.data.items.map((i) => ({
-              symbol: i.symbol,
-              candles: i.candles.map((c) => ({
-                dateUtcSeconds: typeof c.dateUtcSeconds === 'number' ? c.dateUtcSeconds : (typeof c.date === 'number' ? c.date : 0),
-                close: typeof c.close === 'number' ? c.close : null,
-              })),
-            }))}
-          />
           </div>
         </div>
       )}
