@@ -73,7 +73,7 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
         setError(msg);
       }
     },
-    [symbols, canAddMore]
+    [symbols, canAddMore, isYieldmaxSelection]
   );
 
   const removeSymbol = useCallback((sym: string) => {
