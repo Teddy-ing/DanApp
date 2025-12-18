@@ -114,7 +114,7 @@ function normalizeDateToIso(text: string): string | null {
   if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
   // try MM/DD/YYYY or MM/DD/YY
   const us = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-  if (us) {   'k '
+  if (us) {
     const year = us[3].length === 2 ? `20${us[3]}` : us[3];
     const mm = us[1].padStart(2, "0");
     const dd = us[2].padStart(2, "0");

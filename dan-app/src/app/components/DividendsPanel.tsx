@@ -6,6 +6,18 @@ import { useQuery } from "@tanstack/react-query";
 type Horizon = "5y" | "max";
 type CustomRange = { enabled: boolean; start: string; end: string };
 
+const STORAGE_KEY = "ui.dividends.open";
+
+function readStoredOpen(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === "true") return true;
+    if (stored === "false") return false;
+  } catch {}
+  return true;
+}
+
 export default function DividendsPanel(props: { symbols: string[]; horizon: Horizon; custom: CustomRange }) {
   const { symbols, horizon, custom } = props;
   const enabled = symbols.length > 0;
@@ -43,17 +55,14 @@ export default function DividendsPanel(props: { symbols: string[]; horizon: Hori
   // Collapsible panel state with localStorage persistence
   const [open, setOpen] = useState<boolean>(true);
   useEffect(() => {
-    try {
-      const stored = typeof window !== 'undefined' ? window.localStorage.getItem('ui.dividends.open') : null;
-      if (stored === 'true' || stored === 'false') {
-        setOpen(stored === 'true');
-      }
-    } catch {}
+    // Sync from localStorage after mount without changing SSR HTML
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOpen(readStoredOpen());
   }, []);
   const setOpenAndPersist = (next: boolean) => {
     setOpen(next);
     try {
-      if (typeof window !== 'undefined') window.localStorage.setItem('ui.dividends.open', String(next));
+      if (typeof window !== "undefined") window.localStorage.setItem(STORAGE_KEY, String(next));
     } catch {}
   };
 

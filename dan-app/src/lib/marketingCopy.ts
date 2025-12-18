@@ -3,7 +3,7 @@ export const marketingCopy = {
   subhead:
     "Reinvest at the next U.S. market open. Splits handled. Compare up to five symbols.",
   usageNote:
-    "Free tier includes all features; 50 one-time actions. Pressing 'Fetch returns' counts as an action. No credit card.",
+    "All signed-in users currently have full access while billing updates are underway. We'll announce pricing before any limits return.",
   trustBullets: [
     "Data from Yahoo Finance via RapidAPI; issuer IR fallback.",
     "DRIP at next U.S. market open; corporate actions (splits) handled.",
@@ -25,7 +25,7 @@ export const marketingCopy = {
     pricing: "#pricing-usage",
   },
   ctas: {
-    primary: "Sign in with Google (free)",
+    primary: "Log in with Google",
     secondary: "See how DRIP is computed",
   },
 };

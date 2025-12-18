@@ -1,5 +1,31 @@
 import { createRedisClient } from "@/lib/redis";
 
+const SHARED_KEY_ENV_VARS = ["RAPIDAPI_SHARED_KEY", "RAPIDAPI_KEY"] as const;
+
+function normalizeKey(candidate?: string | null): string | null {
+  if (!candidate) return null;
+  const trimmed = candidate.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+export function getSharedRapidApiKey(): string | null {
+  for (const envName of SHARED_KEY_ENV_VARS) {
+    const value = normalizeKey(process.env[envName]);
+    if (value) return value;
+  }
+  return null;
+}
+
+export class RapidApiKeyMissingError extends Error {
+  readonly reason: "shared_missing" | "user_missing";
+
+  constructor(reason: "shared_missing" | "user_missing") {
+    super("RAPIDAPI_KEY_MISSING");
+    this.name = "RapidApiKeyMissingError";
+    this.reason = reason;
+  }
+}
+
 export async function deriveAesGcmKey(secret: string, saltBytes: Uint8Array): Promise<CryptoKey> {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HKDF" }, false, ["deriveKey"]);
@@ -48,7 +74,7 @@ export async function getDecryptedRapidApiKey(userId: string): Promise<string | 
   }
   if (!record) return null;
   const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
-  if (!secret) throw new Error('MISCONFIG_SECRET');
+  if (!secret) throw new Error("MISCONFIG_SECRET");
   try {
     const iv = Uint8Array.from(Buffer.from(record.iv, "base64"));
     const ciphertext = Uint8Array.from(Buffer.from(record.ciphertext, "base64"));
@@ -56,8 +82,25 @@ export async function getDecryptedRapidApiKey(userId: string): Promise<string | 
     const plaintextBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
     return new TextDecoder().decode(plaintextBuf);
   } catch {
-    throw new Error('DECRYPT_FAILED');
+    throw new Error("DECRYPT_FAILED");
   }
 }
 
+export async function resolveRapidApiKey(userId?: string | null): Promise<{ key: string; source: "shared" | "user" }> {
+  const shared = getSharedRapidApiKey();
+  if (shared) {
+    return { key: shared, source: "shared" };
+  }
+
+  if (!userId) {
+    throw new RapidApiKeyMissingError("shared_missing");
+  }
+
+  const decrypted = await getDecryptedRapidApiKey(userId);
+  if (decrypted) {
+    return { key: decrypted, source: "user" };
+  }
+
+  throw new RapidApiKeyMissingError("user_missing");
+}
 

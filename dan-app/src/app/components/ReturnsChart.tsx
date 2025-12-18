@@ -20,14 +20,20 @@ type Series = { symbol: string; value: Array<number | null>; pct: Array<number |
 type Props = {
   dates: string[];
   series: Series[];
+  benchmark?: Series | null;
   height?: number | 'full';
+  highlightDate?: string | null;
 };
 
-export default function ReturnsChart({ dates, series, height }: Props) {
+export default function ReturnsChart({ dates, series, benchmark, height, highlightDate }: Props) {
   const [mode, setMode] = useState<'$' | '%'>('$');
   const zeroLineLabel = mode === '$' ? '$0' : '0%';
 
   const palette = ['#5B8DEF', '#E66E6E', '#6DD3A8', '#F5C26B', '#B388EB'];
+  const benchmarkKey = useMemo(
+    () => (benchmark ? `${benchmark.symbol} (benchmark)` : null),
+    [benchmark]
+  );
 
   const { data, min, max, xMin, xMax } = useMemo(() => {
     const rows: Array<Record<string, number | string | null>> = [];
@@ -48,6 +54,18 @@ export default function ReturnsChart({ dates, series, height }: Props) {
           max = max == null ? value : Math.max(max, value);
         }
       }
+      if (benchmark && benchmarkKey) {
+        const rawVal = benchmark.value[i] ?? null;
+        const rawPct = benchmark.pct[i] ?? null;
+        const nextVal = mode === '$' ? rawVal : (rawPct == null ? null : rawPct * 100);
+        const isFiniteNumber = typeof nextVal === 'number' && Number.isFinite(nextVal);
+        row[benchmarkKey] = isFiniteNumber ? nextVal : null;
+        if (isFiniteNumber) {
+          const value = nextVal as number;
+          min = min == null ? value : Math.min(min, value);
+          max = max == null ? value : Math.max(max, value);
+        }
+      }
       rows.push(row);
     }
 
@@ -58,7 +76,7 @@ export default function ReturnsChart({ dates, series, height }: Props) {
     const finalMax = max ?? 0;
 
     return { data: rows, min: finalMin, max: finalMax, xMin, xMax };
-  }, [dates, series, mode]);
+  }, [dates, series, benchmark, benchmarkKey, mode]);
 
   const yDomain = useMemo(() => {
     // Clamped p approach: try to put 0 at p=0.1 from bottom without inflating the top.
@@ -112,6 +130,9 @@ export default function ReturnsChart({ dates, series, height }: Props) {
               domain={[yDomain[0], yDomain[1]]}
               tickFormatter={(v) => (mode === '$' ? `$${Math.round(v as number)}` : `${Math.round(v as number)}%`)}
             />
+            {highlightDate ? (
+              <ReferenceLine x={highlightDate} stroke="#f59e0b" strokeDasharray="2 2" strokeWidth={2} ifOverflow="extendDomain" />
+            ) : null}
             {hasDomain && (
               <>
                 {yDomain[1] <= 0 ? (
@@ -184,6 +205,19 @@ export default function ReturnsChart({ dates, series, height }: Props) {
                 connectNulls
               />
             ))}
+            {benchmark && benchmarkKey && (
+              <Line
+                key={benchmarkKey}
+                type="monotone"
+                dataKey={benchmarkKey}
+                dot={false}
+                stroke="#1f2937"
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                isAnimationActive={false}
+                connectNulls
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>

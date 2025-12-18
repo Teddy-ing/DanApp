@@ -36,4 +36,80 @@ export function parseSymbols(param: string | null): string[] {
   return normalized;
 }
 
+export const YIELDMAX_KEYWORD = "YIELDMAX";
+
+export const YIELDMAX_SYMBOLS: readonly string[] = [
+  "ABNY",
+  "AIYY",
+  "AMDY",
+  "AMZY",
+  "APLY",
+  "BABO",
+  "BIGY",
+  "BRKC",
+  "CHPY",
+  "CONY",
+  "CRCO",
+  "CRSH",
+  "CVNY",
+  "DIPS",
+  "DISO",
+  "DRAY",
+  "FBY",
+  "FEAT",
+  "FIAT",
+  "FIVY",
+  "GDXY",
+  "GMEY",
+  "GOOY",
+  "GPTY",
+  "HIYY",
+  "HOOY",
+  "JPMO",
+  "LFGY",
+  "MARO",
+  "MRNY",
+  "MSFO",
+  "MSST",
+  "MSTY",
+  "NFLY",
+  "NVDY",
+  "NVIT",
+  "OARK",
+  "PLTY",
+  "PYPY",
+  "QDTY",
+  "RBLY",
+  "RDTY",
+  "RDYY",
+  "RNTY",
+  "SDTY",
+  "SLTY",
+  "SMCY",
+  "SNOY",
+  "SOXY",
+  "TEST",
+  "TSLY",
+  "TSMY",
+  "ULTY",
+  "WNTR",
+  "XOMO",
+  "XYZY",
+  "YBIT",
+  "YMAG",
+  "YMAX",
+  "YQQQ",
+];
+
+export function isYieldmaxKeyword(raw: string | null | undefined): boolean {
+  if (raw == null) return false;
+  return raw.trim().toUpperCase() === YIELDMAX_KEYWORD;
+}
+
+export function isYieldmaxBundleSymbols(symbols: string[]): boolean {
+  if (symbols.length !== YIELDMAX_SYMBOLS.length) return false;
+  const set = new Set(symbols.map((s) => s.trim().toUpperCase()));
+  return YIELDMAX_SYMBOLS.every((s) => set.has(s));
+}
+
 

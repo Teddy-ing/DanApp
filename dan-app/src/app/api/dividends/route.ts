@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchSplitsAndDividends } from "@/providers/yahoo";
 import { toNyDateString } from "@/lib/calendar";
-import { parseSymbols } from "@/lib/ticker";
+import { isYieldmaxBundleSymbols, isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
-import { getDecryptedRapidApiKey } from "@/lib/userKey";
+import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 
 type Range = "5y" | "1y" | "max";
 
@@ -28,17 +28,35 @@ export async function GET(req: NextRequest) {
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) return jsonError(401, "Unauthorized");
-  const rapidApiKey = await getDecryptedRapidApiKey(userId);
-  if (!rapidApiKey) return jsonError(400, "RapidAPI key not set. Save your key first.");
+  let rapidApiKey: string;
+  try {
+    const { key } = await resolveRapidApiKey(userId);
+    rapidApiKey = key;
+  } catch (e) {
+    if (e instanceof RapidApiKeyMissingError) {
+      if (e.reason === "shared_missing") {
+        return jsonError(500, "Server misconfiguration: configure RAPIDAPI_SHARED_KEY or enable user RapidAPI keys.");
+      }
+      return jsonError(400, "RapidAPI key not set. Save your key first.");
+    }
+    const code = (e as Error)?.message || "";
+    if (code === "MISCONFIG_SECRET") {
+      return jsonError(500, "Server misconfiguration: missing AUTH_SECRET/NEXTAUTH_SECRET");
+    }
+    return jsonError(400, "RapidAPI key not set. Save your key first.");
+  }
 
   
 
   const range = parseRange(url.searchParams.get("range"));
-  const symbols = parseSymbols(url.searchParams.get("symbols"));
+  const symbolsParam = url.searchParams.get("symbols");
+  const symbolsFromParam = parseSymbols(symbolsParam);
+  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam) || isYieldmaxBundleSymbols(symbolsFromParam);
+  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : symbolsFromParam;
   if (symbols.length === 0) {
     return jsonError(400, "Query param 'symbols' is required (comma-separated), e.g., symbols=AAPL,MSFT");
   }
-  if (symbols.length > 5) {
+  if (!useYieldmaxBundle && symbols.length > 5) {
     return jsonError(400, "A maximum of 5 symbols is supported");
   }
 

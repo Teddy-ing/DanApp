@@ -1,4 +1,5 @@
 import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 
 const googleClientId =
@@ -13,7 +14,7 @@ const googleClientSecret =
   "missing";
 const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
-
+const enableTestUser = process.env.AUTH_ENABLE_TEST_USER === "true";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret,
@@ -33,6 +34,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       clientId: googleClientId,
       clientSecret: googleClientSecret,
     }),
+    ...(enableTestUser
+      ? [
+          Credentials({
+            id: "test-user",
+            name: "Test User",
+            credentials: {},
+            authorize: async () => {
+              return {
+                id: "test-user",
+                name: "Test User",
+                email: "test-user@example.com",
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   cookies: {
     sessionToken: {

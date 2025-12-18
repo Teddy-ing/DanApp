@@ -1,4 +1,4 @@
-import { auth, signIn } from "@/auth";
+import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { marketingCopy } from "@/lib/marketingCopy";
 
@@ -20,16 +20,12 @@ export default async function Home() {
                 <li><a className="hover:underline" href={marketingCopy.links.pricing}>Pricing</a></li>
               </ul>
             </nav>
-            <form
-              action={async () => {
-                "use server";
-                await signIn("google", { redirectTo: "/returns", prompt: "select_account" });
-              }}
+            <a
+              href="/login"
+              className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-3 py-2 text-sm font-medium hover:bg-indigo-700 transition"
             >
-              <button className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-3 py-2 text-sm font-medium hover:bg-indigo-700 transition">
-                {marketingCopy.ctas.primary}
-              </button>
-            </form>
+              {marketingCopy.ctas.primary}
+            </a>
           </header>
           <main id="main-content" className="mt-8">
             <section aria-labelledby="hero-heading" className="rounded-xl border border-black/10 dark:border-white/15 bg-white dark:bg-neutral-900 shadow-sm p-6">
@@ -40,16 +36,12 @@ export default async function Home() {
                 {marketingCopy.subhead}
               </p>
               <div className="mt-4 flex items-center gap-3">
-                <form
-                  action={async () => {
-                    "use server";
-                    await signIn("google", { redirectTo: "/returns", prompt: "select_account" });
-                  }}
+                <a
+                  href="/login"
+                  className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-indigo-700 transition"
                 >
-                  <button className="inline-flex items-center justify-center rounded-md bg-indigo-600 text-white px-4 py-2.5 text-sm font-medium hover:bg-indigo-700 transition">
-                    {marketingCopy.ctas.primary}
-                  </button>
-                </form>
+                  {marketingCopy.ctas.primary}
+                </a>
                 <a href={marketingCopy.links.methodology} className="text-sm text-indigo-700 hover:underline">
                   {marketingCopy.ctas.secondary}
                 </a>
@@ -102,7 +94,7 @@ export default async function Home() {
                 </details>
                 <details id="pricing-usage">
                   <summary className="cursor-pointer py-2 text-sm font-medium">Pricing & Usage</summary>
-                  <div className="pb-3 text-sm text-gray-700 dark:text-gray-300">Free tier includes all features with 50 one-time actions. Pressing “Fetch returns” counts as an action. No credit card required.</div>
+                  <div className="pb-3 text-sm text-gray-700 dark:text-gray-300">{marketingCopy.usageNote}</div>
                 </details>
                 <details>
                   <summary className="cursor-pointer py-2 text-sm font-medium">Which tickers are supported?</summary>
@@ -114,7 +106,7 @@ export default async function Home() {
                 </details>
                 <details>
                   <summary className="cursor-pointer py-2 text-sm font-medium">Can I export results?</summary>
-                  <div className="pb-3 text-sm text-gray-700 dark:text-gray-300">Yes. XLSX export is included and counts toward usage when you run a query.</div>
+                  <div className="pb-3 text-sm text-gray-700 dark:text-gray-300">Yes. XLSX export is included, and additional formats are coming. Exports are available to everyone while billing is deferred.</div>
                 </details>
               </div>
             </section>

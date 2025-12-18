@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getDecryptedRapidApiKey } from "@/lib/userKey";
+import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
-import { parseSymbols } from "@/lib/ticker";
+import { isYieldmaxBundleSymbols, isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
 import { fetchDailyCandles } from "@/providers/yahoo";
 import { computeSymbolStats } from "@/lib/stats";
 
@@ -28,10 +28,15 @@ export async function GET(req: NextRequest) {
   if (!userId) return jsonError(401, "Unauthorized");
   let rapidApiKey: string;
   try {
-    const key = await getDecryptedRapidApiKey(userId);
-    if (!key) return jsonError(400, "RapidAPI key not set. Save your key first.");
+    const { key } = await resolveRapidApiKey(userId);
     rapidApiKey = key;
   } catch (e) {
+    if (e instanceof RapidApiKeyMissingError) {
+      if (e.reason === "shared_missing") {
+        return jsonError(500, "Server misconfiguration: configure RAPIDAPI_SHARED_KEY or enable user RapidAPI keys.");
+      }
+      return jsonError(400, "RapidAPI key not set. Save your key first.");
+    }
     const code = (e as Error)?.message || "";
     if (code === "MISCONFIG_SECRET") {
       return jsonError(500, "Server misconfiguration: missing AUTH_SECRET/NEXTAUTH_SECRET");
@@ -50,11 +55,14 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const symbols = parseSymbols(url.searchParams.get("symbols"));
+  const symbolsParam = url.searchParams.get("symbols");
+  const symbolsFromParam = parseSymbols(symbolsParam);
+  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam) || isYieldmaxBundleSymbols(symbolsFromParam);
+  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : symbolsFromParam;
   if (symbols.length === 0) {
     return jsonError(400, "Query param 'symbols' is required (comma-separated), e.g., symbols=AAPL,MSFT");
   }
-  if (symbols.length > 5) {
+  if (!useYieldmaxBundle && symbols.length > 5) {
     return jsonError(400, "A maximum of 5 symbols is supported");
   }
 

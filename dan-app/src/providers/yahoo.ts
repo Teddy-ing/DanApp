@@ -97,7 +97,7 @@ const BASE_URL = `https://apidojo-yahoo-finance-v1.p.rapidapi.com`;
 
 export async function fetchDailyCandles(
   symbol: string,
-  span: { period1: number; period2?: number } | ("5y" | "max" | "1y") = "5y",
+  span: { period1: number; period2?: number } | ("1y" | "3y" | "5y" | "max") = "5y",
   auth: RapidApiAuth
 ): Promise<DailyCandle[]> {
   const validSymbol = validateUsTickerFormat(symbol);
@@ -218,7 +218,7 @@ export type DividendEvent = {
 
 export async function fetchSplitsAndDividends(
   symbol: string,
-  span: { period1: number; period2?: number } | ("5y" | "max" | "1y") = "max",
+  span: { period1: number; period2?: number } | ("1y" | "3y" | "5y" | "max") = "max",
   auth: RapidApiAuth
 ): Promise<{ splits: SplitEvent[]; dividends: DividendEvent[] }> {
   const validSymbol = validateUsTickerFormat(symbol);
