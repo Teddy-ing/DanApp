@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { toApiError } from "@/lib/errors";
-import { isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
+import { isYieldmaxBundleSymbols, isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
 import { fetchDailyCandles } from "@/providers/yahoo";
 import { computeSymbolStats } from "@/lib/stats";
 
@@ -56,8 +56,9 @@ export async function GET(req: NextRequest) {
   }
 
   const symbolsParam = url.searchParams.get("symbols");
-  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam);
-  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : parseSymbols(symbolsParam);
+  const symbolsFromParam = parseSymbols(symbolsParam);
+  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam) || isYieldmaxBundleSymbols(symbolsFromParam);
+  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : symbolsFromParam;
   if (symbols.length === 0) {
     return jsonError(400, "Query param 'symbols' is required (comma-separated), e.g., symbols=AAPL,MSFT");
   }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
-import { isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
+import { isYieldmaxBundleSymbols, isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
 import { toApiError } from "@/lib/errors";
 import { auth } from "@/auth";
 import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
@@ -62,8 +62,9 @@ export async function GET(req: NextRequest) {
   const period2 = url.searchParams.get("period2");
   const customSpan = period1 ? { period1: Number(period1), period2: period2 ? Number(period2) : undefined } : undefined;
   const symbolsParam = url.searchParams.get("symbols");
-  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam);
-  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : parseSymbols(symbolsParam);
+  const symbolsFromParam = parseSymbols(symbolsParam);
+  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam) || isYieldmaxBundleSymbols(symbolsFromParam);
+  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : symbolsFromParam;
 
   if (symbols.length === 0) {
     return jsonError(400, "Query param 'symbols' is required (comma-separated), e.g., symbols=AAPL,MSFT");

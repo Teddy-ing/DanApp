@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { parseSymbols } from "@/lib/ticker";
+import { isYieldmaxBundleSymbols, isYieldmaxKeyword, parseSymbols, YIELDMAX_SYMBOLS } from "@/lib/ticker";
 import { resolveRapidApiKey, RapidApiKeyMissingError } from "@/lib/userKey";
 import { checkRateLimit } from "@/lib/rateLimit";
 import { getOrComputePrecomputed } from "@/lib/precompute";
@@ -32,14 +32,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
   }
 
-  const symbols = parseSymbols(url.searchParams.get("symbols"));
+  const symbolsParam = url.searchParams.get("symbols");
+  const symbolsFromParam = parseSymbols(symbolsParam);
+  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam) || isYieldmaxBundleSymbols(symbolsFromParam);
+  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : symbolsFromParam;
   if (symbols.length === 0) {
     return NextResponse.json(
       { error: { message: "Query param 'symbols' is required (comma-separated), e.g., symbols=AAPL,MSFT" } },
       { status: 400 }
     );
   }
-  if (symbols.length > 5) {
+  if (!useYieldmaxBundle && symbols.length > 5) {
     return NextResponse.json(
       { error: { message: "A maximum of 5 symbols is supported" } },
       { status: 400 }

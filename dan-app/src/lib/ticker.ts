@@ -106,4 +106,10 @@ export function isYieldmaxKeyword(raw: string | null | undefined): boolean {
   return raw.trim().toUpperCase() === YIELDMAX_KEYWORD;
 }
 
+export function isYieldmaxBundleSymbols(symbols: string[]): boolean {
+  if (symbols.length !== YIELDMAX_SYMBOLS.length) return false;
+  const set = new Set(symbols.map((s) => s.trim().toUpperCase()));
+  return YIELDMAX_SYMBOLS.every((s) => set.has(s));
+}
+
 
