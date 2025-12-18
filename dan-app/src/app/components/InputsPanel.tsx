@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { validateUsTickerFormat } from '@/lib/ticker';
+import { isYieldmaxKeyword, validateUsTickerFormat, YIELDMAX_KEYWORD, YIELDMAX_SYMBOLS } from '@/lib/ticker';
 
 type Horizon = '5y' | 'max';
 
@@ -14,7 +14,12 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
   const [horizon, setHorizon] = useState<Horizon>(initialHorizon);
   const [custom, setCustom] = useState<{ enabled: boolean; start: string; end: string }>(initialCustom);
 
-  const canAddMore = symbols.length < 5;
+  const isYieldmaxSelection = useMemo(
+    () => symbols.length === YIELDMAX_SYMBOLS.length && symbols.every((sym) => YIELDMAX_SYMBOLS.includes(sym)),
+    [symbols]
+  );
+
+  const canAddMore = !isYieldmaxSelection && symbols.length < 5;
 
   const clearTimerRef = useRef<number | null>(null);
   function showTransientHint(msg: string, ms = 1500) {
@@ -34,12 +39,26 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
     (raw: string) => {
       const trimmed = raw.trim();
       if (!trimmed) return;
+      if (isYieldmaxSelection) {
+        setError('Clear YIELDMAX before adding other symbols');
+        return;
+      }
       try {
         const normalized = validateUsTickerFormat(trimmed);
         if (symbols.includes(normalized)) {
           // Silent de-dupe: clear input, show transient hint, keep order
           setInput('');
           showTransientHint('Already added');
+          return;
+        }
+        if (isYieldmaxKeyword(trimmed)) {
+          if (symbols.length > 0) {
+            setError('Clear symbols before using YIELDMAX');
+            return;
+          }
+          setSymbols([...YIELDMAX_SYMBOLS]);
+          setInput(YIELDMAX_KEYWORD);
+          setError(null);
           return;
         }
         if (!canAddMore) {
@@ -92,8 +111,9 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
 
   const helperText = useMemo(() => {
     if (error) return error;
+    if (isYieldmaxSelection) return `YIELDMAX bundle active (${YIELDMAX_SYMBOLS.length} tickers)`;
     return 'Max 5 symbols. Format: AAPL, MSFT, BRK-B. Spaces in between each symbol';
-  }, [error]);
+  }, [error, isYieldmaxSelection]);
 
   function onChangeBase(e: React.ChangeEvent<HTMLInputElement>) {
     const value = e.target.value;
@@ -107,19 +127,33 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
         <div>
           <label className="block text-sm font-medium mb-1">Symbols</label>
           <div className="flex flex-wrap gap-2 mb-2">
-            {symbols.map((sym) => (
-              <span key={sym} className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-white/15 px-3 py-1 text-sm">
-                {sym}
+            {isYieldmaxSelection ? (
+              <span className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-white/15 px-3 py-1 text-sm">
+                {YIELDMAX_KEYWORD} bundle ({YIELDMAX_SYMBOLS.length})
                 <button
                   type="button"
-                  aria-label={`Remove ${sym}`}
-                  onClick={() => removeSymbol(sym)}
+                  aria-label="Clear YIELDMAX selection"
+                  onClick={() => setSymbols([])}
                   className="-mr-1 rounded-full px-1.5 py-0.5 hover:bg-black/5 dark:hover:bg-white/10"
                 >
                   ×
                 </button>
               </span>
-            ))}
+            ) : (
+              symbols.map((sym) => (
+                <span key={sym} className="inline-flex items-center gap-2 rounded-full border border-black/10 dark:border-white/15 px-3 py-1 text-sm">
+                  {sym}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${sym}`}
+                    onClick={() => removeSymbol(sym)}
+                    className="-mr-1 rounded-full px-1.5 py-0.5 hover:bg-black/5 dark:hover:bg-white/10"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))
+            )}
           </div>
           <input
             type="text"
@@ -193,7 +227,16 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
             onClick={() => {
               let nextSymbols = symbols;
               const pending = input.trim();
-              if (pending) {
+              if (isYieldmaxKeyword(pending)) {
+                if (symbols.length > 0 && !isYieldmaxSelection) {
+                  setError('Clear symbols before using YIELDMAX');
+                  return;
+                }
+                nextSymbols = [...YIELDMAX_SYMBOLS];
+                setSymbols(nextSymbols);
+                setError(null);
+                setInput(YIELDMAX_KEYWORD);
+              } else if (pending) {
                 try {
                   const normalized = validateUsTickerFormat(pending);
                   if (symbols.includes(normalized)) {
@@ -231,7 +274,16 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
               if (!onStats) return;
               let nextSymbols = symbols;
               const pending = input.trim();
-              if (pending) {
+              if (isYieldmaxKeyword(pending)) {
+                if (symbols.length > 0 && !isYieldmaxSelection) {
+                  setError('Clear symbols before using YIELDMAX');
+                  return;
+                }
+                nextSymbols = [...YIELDMAX_SYMBOLS];
+                setSymbols(nextSymbols);
+                setError(null);
+                setInput(YIELDMAX_KEYWORD);
+              } else if (pending) {
                 try {
                   const normalized = validateUsTickerFormat(pending);
                   if (symbols.includes(normalized)) {

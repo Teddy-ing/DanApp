@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { fetchDailyCandles, fetchSplitsAndDividends } from "@/providers/yahoo";
-import { parseSymbols, validateUsTickerFormat } from "@/lib/ticker";
+import { isYieldmaxKeyword, parseSymbols, validateUsTickerFormat, YIELDMAX_SYMBOLS } from "@/lib/ticker";
 import { computeDripSeries } from "@/lib/drip";
 import { gzipSync } from "zlib";
 import { toApiError } from "@/lib/errors";
@@ -78,11 +78,13 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const symbols = parseSymbols(url.searchParams.get("symbols"));
+  const symbolsParam = url.searchParams.get("symbols");
+  const useYieldmaxBundle = isYieldmaxKeyword(symbolsParam);
+  const symbols = useYieldmaxBundle ? [...YIELDMAX_SYMBOLS] : parseSymbols(symbolsParam);
   if (symbols.length === 0) {
     return jsonError(400, "Query param 'symbols' is required (comma-separated), e.g., symbols=AAPL,MSFT");
   }
-  if (symbols.length > 5) {
+  if (!useYieldmaxBundle && symbols.length > 5) {
     return jsonError(400, "A maximum of 5 symbols is supported");
   }
 

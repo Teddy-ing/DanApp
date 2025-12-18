@@ -2,6 +2,7 @@
 **Version:** 0.4 (Aug 7, 2025)  
 **Owner:** Theodore Ingberman
 
+**Update (Dec 18, 2025):** Added a hidden `YIELDMAX` keyword that expands to the full YieldMax ticker bundle server-side, bypassing the 5-symbol cap only for that keyword to keep the rest of the flow unchanged.
 **Update (Dec 15, 2025):** Added a protected `/yieldmax` page mirroring YieldMax ETF groups with ROC scrape (24h Redis cache) and dividend-rate calculations via Yahoo Finance; shared header now links Returns ↔ YieldMax.
 **Update (Nov 11, 2025, later):** Reflowed the returns histogram so its summary stats sit below the chart, preventing overlap with the price panel.
 **Update (Nov 11, 2025):** Deferred effect-driven state updates to microtasks to keep React Compiler happy (lightbox, returns shell/view) and trimmed unused theme toggle stub.
@@ -212,7 +213,7 @@ RapidAPI key: AES-GCM encrypt before storing in Redis; never log; never return t
 
 Rate limit: 30 requests / minute per user (sliding window in Redis)
 
-Symbols per call: ≤ 5 enforced server-side
+Symbols per call: ≤ 5 enforced server-side (except the hidden `YIELDMAX` bundle keyword)
 
 Payload size: gzip responses; prefer 5y default horizon to keep JSON < ~1–2 MB
 
