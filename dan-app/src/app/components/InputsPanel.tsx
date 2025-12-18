@@ -43,22 +43,22 @@ export default function InputsPanel(props: { initialSymbols?: string[]; initialB
         setError('Clear YIELDMAX before adding other symbols');
         return;
       }
+      if (isYieldmaxKeyword(trimmed)) {
+        if (symbols.length > 0) {
+          setError('Clear symbols before using YIELDMAX');
+          return;
+        }
+        setSymbols([...YIELDMAX_SYMBOLS]);
+        setInput(YIELDMAX_KEYWORD);
+        setError(null);
+        return;
+      }
       try {
         const normalized = validateUsTickerFormat(trimmed);
         if (symbols.includes(normalized)) {
           // Silent de-dupe: clear input, show transient hint, keep order
           setInput('');
           showTransientHint('Already added');
-          return;
-        }
-        if (isYieldmaxKeyword(trimmed)) {
-          if (symbols.length > 0) {
-            setError('Clear symbols before using YIELDMAX');
-            return;
-          }
-          setSymbols([...YIELDMAX_SYMBOLS]);
-          setInput(YIELDMAX_KEYWORD);
-          setError(null);
           return;
         }
         if (!canAddMore) {
